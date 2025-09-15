@@ -50,6 +50,9 @@ I am indebted to other projects that inspired and informed this project.  I hope
 - [ginoledesma/sunpower-pvs-exporter](https://github.com/ginoledesma/sunpower-pvs-exporter/blob/master/sunpower_pvs_notes.md)
 - [Starreveld](https://starreveld.com/PVS6%20Access%20and%20API.pdf)
 
+also
+- [https://github.com/krbaker/hass-sunpower](https://github.com/krbaker/hass-sunpower)
+- [https://github.com/jrconlin/sunpower_hass/tree/main/direct]{(https://github.com/jrconlin/sunpower_hass/tree/main/direct)
 
 ## Gotchas
 - The inverter(s) send a message approximately every 15 seconds when the microinverter is up and running -- which means when there's sunlight. The microinverters may report an error when there's heavy shading or at night.
