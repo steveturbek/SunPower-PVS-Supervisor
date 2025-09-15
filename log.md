@@ -23,6 +23,7 @@ Updates
 - `sudo shutdown -r now`
 - **Safely!** install rasberry Pi in PVS6 case, with ethernet to 'LAN1' (black) port and USB to left-most USB port
 
+
 Using my free Gmail account, in [Google Cloud Console](https://console.cloud.google.com)
 - created project "SunPower-PVS6-Supervisor"
 - Enable Google Sheets API
