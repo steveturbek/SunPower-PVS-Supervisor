@@ -18,14 +18,17 @@ Sadly, I had a microinverter go bad but did not learn about it untill **years la
 
 
 ## Script Actions
+In this script, running on the Raspberry Pi
 
 1. Query the PVS6 web interface
-1. Save the output as a JSON file with filename of current timestamp 
+1. Save the output as a JSON file with filename of current timestamp
+2.   in SSH you can manually pull the data to a file `curl http://172.27.153.1/cgi-bin/dl_cgi?Command=DeviceList -o "$HOME/PVS6outputJSON/$(date +%Y%m%d_%H%M%S).json"`
 1. Parses the JSON to extract key metrics
 1. Load a weather API to get how cloudy it is locally
-1. Save curated data to a local CSV file
-1. Submit data to Google sheet via API
-1. Check for anomalies and sends alerts
+1. Save Parsed data to a local CSV file
+1. Submit data to add row to Google sheet via API
+1. Check for anomalies and send alerts
+1. Monthly summary by email 
 
 
 ### Your friend, the PVS6 PhotoVoltaic Supervisor version 6
