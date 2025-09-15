@@ -1,31 +1,34 @@
-# SunPower-PSV6-Supervisor-Supervisor
-Raspberry Pi + python script to exfiltrate Photovoltaic solar data from unsupported hardware, without paying fees.
+# SunPower PSV6 Supervisor Supervisor
+Make a Raspberry Pi + python script to exfiltrate Photovoltaic solar data from unsupported hardware, without paying fees.
 
 ## Approach
-The basic approach, demonstrated by other projects, is that the PVS6 has a small computer inside running a web server.  If you plug a laptop or other deivce into the internal ethernet device, and go to a 'web page' at http://172.27.153.1/cgi-bin/dl_cgi?Command=DeviceList, it will output the current state of the system, but no history or alerting. A Raspberry Pi inserted in the PVS6 case periodically calls a python script to run the code in this github project
+The basic approach, demonstrated by other projects, is that the PVS6 has a small computer inside running a web server.  If you plug a laptop or other deivce into the internal ethernet port, and go to a 'web page' made for technicians, it will output the current state of the system, but no history or alerting. A Raspberry Pi inserted in the PVS6 case periodically calls a python script to run the code in this github project to catch the status and save for the future.
 
-### Script Actions
+We want to:
+1. Get the data off the PVS6, for future reference 
+1. Make it available to review trends by non programmers, e.g. a spreadsheet
+1. Send me alerts if something goes wrong.
 
-1 Query the PVS6 web interface
-1 Save the output as a JSON file with filename of current timestamp 
-1 Parses the response to extract key metrics
-1 Load a local weather API to get how cloudy it is
-1 Save curated data to a local CSV file
-1 Submits data to Google sheet via API
-1 Check for anomalies and sends alerts
-
-Reasoning - This is fairly nerdy and we want to 
-a Get the data off the device
-a make it easily available to review trends, e.g. a spreadsheet
-a send me alerts if something goes wrong.
+BUT we don't want a dashboard that I have to look at it!  
 
 ## Background
-For reference, this project was made for a SunPower PV system installed in 2019.  Residential house in the northeast with a roof mounted system.  2 circuits, each with 6 Sunpower (actually Maxeon) PV panels, with an attached Enphase microinverter. 
+For reference, this project was made for a SunPower PV system installed in 2019.  Residential house in the northeast USA with a roof mounted system.  2 circuits, each with 6 Sunpower (actually Maxeon) PV panels & attached Enphase microinverters. 
 
-Sadly, I had a microinverter go bad but did not learn about it untill I dug in - monitoring is really up to the user!
+Sadly, I had a microinverter go bad but did not learn about it untill **years later** when another 5 died.  I only noticed that when our electric bill going up and went' down the rabbit hole'.  Monitoring should NOT be left up to the user!  Solar has to be come more friendly or it will not catch on in america.  This project is hopefully is a small contribution to that.
 
 
-### PVS6 PhotoVoltaic Supervisor version 6
+## Script Actions
+
+1. Query the PVS6 web interface
+1. Save the output as a JSON file with filename of current timestamp 
+1. Parses the JSON to extract key metrics
+1. Load a weather API to get how cloudy it is locally
+1. Save curated data to a local CSV file
+1. Submit data to Google sheet via API
+1. Check for anomalies and sends alerts
+
+
+### Your friend, the PVS6 PhotoVoltaic Supervisor version 6
 
 The Sunpower PVS6 PhotoVoltaic Supervisor 6 is monitoring unit, typically installed near the near electrical panel.  It just measures, does not control the microinverters.  Your solar panels will generate power and offset your consumption regardless of whether the PVS6 is online. 
 
