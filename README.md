@@ -2,10 +2,27 @@
 Raspberry Pi + python script to exfiltrate Photovoltaic solar data from unsupported hardware, without paying fees.
 
 ## Approach
-This
+The basic approach, demonstrated by other projects, is that the PVS6 has a small computer inside running a web server.  If you plug a laptop or other deivce into the internal ethernet device, and go to a 'web page' at http://172.27.153.1/cgi-bin/dl_cgi?Command=DeviceList, it will output the current state of the system, but no history or alerting. A Raspberry Pi inserted in the PVS6 case periodically calls a python script to run the code in this github project
+
+### Script Actions
+
+1 Query the PVS6 web interface
+1 Save the output as a JSON file with filename of current timestamp 
+1 Parses the response to extract key metrics
+1 Load a local weather API to get how cloudy it is
+1 Save curated data to a local CSV file
+1 Submits data to Google sheet via API
+1 Check for anomalies and sends alerts
+
+Reasoning - This is fairly nerdy and we want to 
+a Get the data off the device
+a make it easily available to review trends, e.g. a spreadsheet
+a send me alerts if something goes wrong.
 
 ## Background
 For reference, this project was made for a SunPower PV system installed in 2019.  Residential house in the northeast with a roof mounted system.  2 circuits, each with 6 Sunpower (actually Maxeon) PV panels, with an attached Enphase microinverter. 
+
+Sadly, I had a microinverter go bad but did not learn about it untill I dug in - monitoring is really up to the user!
 
 
 ### PVS6 PhotoVoltaic Supervisor version 6
