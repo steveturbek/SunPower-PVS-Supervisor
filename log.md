@@ -1,4 +1,4 @@
-# Project Log, in reverse chron order
+# Project Log, in reverse chronological order
 
 ## 15 Sept 2025
 Raspberry Pi 4B
