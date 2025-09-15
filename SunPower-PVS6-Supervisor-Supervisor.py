@@ -7,10 +7,9 @@ from googleapiclient.discovery import build
 
 # Configuration
 PVS6_URL = 'http://172.27.153.1/cgi-bin/dl_cgi?Command=DeviceList'
-CREDENTIALS_FILE = '~/google-api-credentials.json'
+CREDENTIALS_FILE = Path.home() / 'google-api-credentials.json'
 SPREADSHEET_ID_FILE = Path.home() / 'google-sheet-spreadsheet-id.txt'
 SPREADSHEET_ID = SPREADSHEET_ID_FILE.read_text().strip()
-print(f"Spreadsheet ID: {SPREADSHEET_ID}")
 SHEET_NAME = 'SolarDataDaily'
 
 class SolarMonitor:
