@@ -53,3 +53,4 @@ I am indebted to other projects that inspired and informed this project.  I hope
 
 ## Gotchas
 - The inverter(s) send a message approximately every 15 seconds when the microinverter is up and running -- which means when there's sunlight. The microinverters may report an error when there's heavy shading or at night.
+- The PVS6 remembers each microinverter for a while (?) if it is not connected, it will report 'error', not disconnected
