@@ -40,7 +40,8 @@ PVS6 were manufactured and sold in the US by SunPower, which unfotunately went o
 
 ### How does it work?
 It is suprisingly simple! The PVS6 'listens' to certain circuits the Solar Panels & Microinverters are on.  The microinverters send a message on the AC electical wiring, called "Power Line Communication". 
-PVS6 has white and black, white and red braided cables. These are consumption Current Transformers how it measures (estimates but accurate. )   Solar ones are a lot more accurate, and get the data from micro inverters as a fall back. 
+PVS6 has white and black, white and red braided cables. These are consumption Current Transformers how it measures (estimates but accurate. )   Solar ones are a lot more accurate, and get the data from micro inverters as a fall back. NO wireless communication from micro inverters to PVS6.
+
 
 ## References
 I am indebted to other projects that inspired and informed this project.  I hope I can pay it back to help others
