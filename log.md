@@ -4,6 +4,7 @@
 Raspberry Pi 4B
 32 GB SD card
 Raspberry Pi OS Lite 64
+account created with password & login, wifi set up to local wifi network, SSH turned on
 
 Updates
 - `sudo apt update && sudo apt upgrade -y`
@@ -19,6 +20,9 @@ Updates
 - Add these 2 lines at the end of the file:
 `interface eth0`
 `nogateway`
+- (Not covered here, but for reference) other guides show how to access the PVS6 web interface on your intranet, for example to connect the solar to [Home Assistant](https://community.home-assistant.io/t/options-for-sunpower-solar-integration/289621) Outside the scope of this project.
+- `sudo shutdown -r now`
+- **Safely!** install rasberry Pi in PVS6 case, with ethernet to 'LAN1' (black) port and USB to left-most USB port
 
 Using my free Gmail account, in [Google Cloud Console](https://console.cloud.google.com)
 - created project "SunPower-PVS6-Supervisor"
