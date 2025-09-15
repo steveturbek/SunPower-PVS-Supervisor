@@ -14,7 +14,11 @@ Updates
 - `python3 -m venv venv` create virtual environment, otherwise there are later errors
 - `source venv/bin/activate` activate the virtual environment
 - `pip install requests google-api-python-client google-auth-httplib2 google-auth-oauthlib` install google API
-- `deactivate` turns off virtual enviroment 
+- `deactivate` turns off virtual enviroment
+- `sudo nano /etc/dhcpcd.conf` edit / create this file to prevent the Pi from using ethernet to PVS6 as gateway
+- Add these 2 lines at the end of the file:
+`interface eth0`
+`nogateway`
 
 Using my free Gmail account, in [Google Cloud Console](https://console.cloud.google.com)
 - created project "SunPower-PVS6-Supervisor"
