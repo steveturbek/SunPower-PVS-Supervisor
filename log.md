@@ -9,7 +9,6 @@ account created with password & login, wifi set up to local wifi network, SSH tu
 Updates
 - `sudo apt update && sudo apt upgrade -y`
 - `sudo apt install python3-pip -y`
-- `mkdir solar-supervisor-supervisor`
 - `sudo apt install git`  install git to get this package
 - `cd ~/solar-supervisor-supervisor`
 - `python3 -m venv venv` create virtual environment, otherwise there are later errors
@@ -38,5 +37,11 @@ Using my free Gmail account, in [Google Cloud Console](https://console.cloud.goo
 Pulling file fom this GitHub repo
 - `git clone https://github.com/steveturbek/SunPower-PVS6-Supervisor-Supervisor`
 - `git pull origin main` to update
-- **`python SunPower-PVS6-Supervisor-Supervisor.py` run program**
 
+To run script,
+- SSH into Raspberry Pi with account, `ssh sunpoweradmin@123.123.0.123` (get IP address from router if need be)
+- `cd ~/solar-supervisor-supervisor`
+- `python3 -m venv venv` create virtual environment, otherwise there are later errors
+- `source venv/bin/activate` activate the virtual environment
+-  **`python ~/SunPower-PVS6-Supervisor-Supervisor/SunPower-PVS6-Supervisor-Supervisor.py` run program!**
+- `deactivate` turns off virtual enviroment
