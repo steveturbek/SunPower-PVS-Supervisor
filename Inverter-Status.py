@@ -7,7 +7,8 @@ import sys
 def get_inverter_status():
     """
     Query PVS6 device and display status of all inverters
-    Meant to be run from a Raspberry Pi connected to ethernet LAN port in PVS6
+   Meant to be run from a Raspberry Pi connected to ethernet LAN port in PVS6
+
     """
     url = "http://172.27.153.1/cgi-bin/dl_cgi?Command=DeviceList"
     
@@ -36,9 +37,9 @@ def get_inverter_status():
         # Display results
         if inverters:
             print(f"\nFound {len(inverters)} inverters:")
-            print("-" * 50)
-            for descr, state in inverters:
-                print(f'{descr}: {state}')
+            print("-" * 60)
+            for i, (descr, state) in enumerate(inverters, 1):
+                print(f'{i:2d}. {descr}: {state}')
         else:
             print("No inverters found in response")
             
@@ -54,4 +55,4 @@ def get_inverter_status():
         print(f"Unexpected error: {e}")
 
 if __name__ == "__main__":
-    get_inverter_status()
+    get_inverter_status() 
