@@ -38,7 +38,7 @@ def get_inverter_status():
             print(f"\nFound {len(inverters)} inverters:")
             print("-" * 50)
             for descr, state in inverters:
-                print(f'"{descr}": "{state}"')
+                print(f'{descr}: {state}')
         else:
             print("No inverters found in response")
             
