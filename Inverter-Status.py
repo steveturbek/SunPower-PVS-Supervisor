@@ -106,7 +106,6 @@ def get_inverter_status():
                 status_info = state_descr
                 if state.lower() == 'working':
                     # Add current AC power production for working inverters
-                    
                 elif state.lower() == 'error':
                     # Add time difference for error states
                     if current_time and data_time:
