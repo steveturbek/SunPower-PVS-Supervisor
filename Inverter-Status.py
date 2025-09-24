@@ -103,13 +103,14 @@ def get_inverter_status():
                     elif data_time:
                         status_info += " [?]"
                     else:
-                        status_info += " [NO DATE]"
+                        status_info += " [NO DATA]"
                 
                 inverters.append((descr, status_info))
         
         # Display results
         if inverters:
-            print(f"\nFound {len(inverters)} inverters:")
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            print(f"\nFound {len(inverters)} inverters at {timestamp}:")
             print("-" * 60)
             for i, (descr, state) in enumerate(inverters, 1):
                 print(f'{i:2d}. {descr}: {state}')
