@@ -70,10 +70,17 @@ def get_inverter_status():
         
         # Find current time from PVS device for time difference calculations
         current_time = None
+        production_meter_power = 0.0
+        
         for device in data.get('devices', []):
             if device.get('DEVICE_TYPE') == 'PVS':
                 current_time = device.get('CURTIME', '')
-                break
+            elif device.get('DEVICE_TYPE') == 'Power Meter' and 'production' in device.get('DESCR', '').lower():
+                # Get total production from the production meter
+                try:
+                    production_meter_power = float(device.get('p_3phsum_kw', 0))
+                except (ValueError, TypeError):
+                    production_meter_power = 0.0
         
         # Find all inverter devices
         inverters = []
@@ -107,11 +114,17 @@ def get_inverter_status():
                 
                 inverters.append((descr, status_info))
         
-        # Display results
+        # Display results with power comparison
         if inverters:
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            print(f"\nFound {len(inverters)} inverters at {timestamp}:")
-            print("-" * 60)
+            power_comparison = ""
+            if production_meter_power > 0:
+                difference = abs(total_inverter_power - production_meter_power)
+                percentage_diff = (difference / production_meter_power * 100) if production_meter_power > 0 else 0
+                power_comparison = f" | Meter: {production_meter_power:.3f}kW | Sum: {total_inverter_power:.3f}kW | Diff: {difference:.3f}kW ({percentage_diff:.1f}%)"
+            
+            print(f"\nFound {len(inverters)} inverters{power_comparison} at {timestamp}:")
+            print("-" * 80)
             for i, (descr, state) in enumerate(inverters, 1):
                 print(f'{i:2d}. {descr}: {state}')
         else:
