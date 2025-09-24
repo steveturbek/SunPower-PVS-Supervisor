@@ -106,6 +106,9 @@ def get_inverter_status():
                     ac_power = float(device.get('p_3phsum_kw', 0))
                     # Add current AC power production for working inverters
                     status_info += f" {ac_power:.3f}kW"
+
+                    print(f"Debug: ac_power: {ac_power}")
+
                 except (ValueError, TypeError):
                     ac_power = 0.0
 
@@ -119,8 +122,8 @@ def get_inverter_status():
                         status_info += f" [{time_diff}]"
                     elif data_time:
                         status_info += " [?]"
-                    else:
-                        status_info += " [NO DATA]"  
+                    #else:
+                        #status_info += " [NO DATA]"  
                                 
                 inverters.append((descr, status_info))
         
