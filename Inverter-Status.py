@@ -118,7 +118,7 @@ def get_inverter_status():
                         status_info += " [NO DATA]"
                 
                 if ac_power != 0.0:  status_info += f" {ac_power:.3f}kW"
-                
+                                
                 inverters.append((descr, status_info))
         
         # Display results with power comparison
