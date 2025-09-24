@@ -68,19 +68,23 @@ def get_inverter_status():
             print(f"Error: PVS6 returned result: {data.get('result')}")
             return
         
-        # Find current time from PVS device for time difference calculations
+        # Find current time from PVS device and production meter for power comparison
         current_time = None
         production_meter_power = 0.0
         
         for device in data.get('devices', []):
             if device.get('DEVICE_TYPE') == 'PVS':
                 current_time = device.get('CURTIME', '')
-            elif device.get('DEVICE_TYPE') == 'Power Meter' and 'production' in device.get('DESCR', '').lower():
-                # Get total production from the production meter
-                try:
-                    production_meter_power = float(device.get('p_3phsum_kw', 0))
-                except (ValueError, TypeError):
-                    production_meter_power = 0.0
+            elif device.get('DEVICE_TYPE') == 'Power Meter':
+                # Check for production meter (TYPE contains "METER-P" or DESCR contains "production")
+                device_type = device.get('TYPE', '')
+                device_desc = device.get('DESCR', '').lower()
+                if 'meter-p' in device_type.lower() or 'production' in device_desc:
+                    try:
+                        production_meter_power = float(device.get('p_3phsum_kw', 0))
+                        print(f"Debug: Found production meter with {production_meter_power}kW")
+                    except (ValueError, TypeError):
+                        production_meter_power = 0.0
         
         # Find all inverter devices
         inverters = []
@@ -118,9 +122,17 @@ def get_inverter_status():
         if inverters:
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             power_comparison = ""
-            if production_meter_power > 0:
+            
+            # Debug output
+            print(f"Debug: Production meter power: {production_meter_power}kW")
+            print(f"Debug: Total inverter power: {total_inverter_power}kW")
+            
+            if production_meter_power > 0 or total_inverter_power > 0:
                 difference = abs(total_inverter_power - production_meter_power)
-                percentage_diff = (difference / production_meter_power * 100) if production_meter_power > 0 else 0
+                if production_meter_power > 0:
+                    percentage_diff = (difference / production_meter_power * 100)
+                else:
+                    percentage_diff = 0
                 power_comparison = f" | Meter: {production_meter_power:.3f}kW | Sum: {total_inverter_power:.3f}kW | Diff: {difference:.3f}kW ({percentage_diff:.1f}%)"
             
             print(f"\nFound {len(inverters)} inverters{power_comparison} at {timestamp}:")
