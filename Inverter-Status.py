@@ -71,6 +71,7 @@ def get_inverter_status():
         # Find current time from PVS device and production meter for power comparison
         current_time = None
         production_meter_power = 0.0
+        total_inverter_power = 0.0  # Initialize here
         
         for device in data.get('devices', []):
             if device.get('DEVICE_TYPE') == 'PVS':
