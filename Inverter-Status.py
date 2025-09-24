@@ -3,12 +3,54 @@
 import requests
 import json
 import sys
+from datetime import datetime
+
+def parse_pvs6_time(time_str):
+    """Parse PVS6 time format: '2025,08,27,15,07,18' to datetime object"""
+    if not time_str:
+        return None
+    try:
+        parts = time_str.split(',')
+        if len(parts) == 6:
+            year, month, day, hour, minute, second = map(int, parts)
+            return datetime(year, month, day, hour, minute, second)
+    except (ValueError, IndexError):
+        pass
+    return None
+
+def get_time_diff_text(current_time_str, data_time_str):
+    """
+    Calculate time difference and return formatted string
+    Returns 'NEW' if < 1 minute, otherwise '>Xm', '>Xh', or '>Xd'
+    """
+    current_time = parse_pvs6_time(current_time_str)
+    data_time = parse_pvs6_time(data_time_str)
+    
+    if not current_time or not data_time:
+        return "?"
+    
+    # Calculate difference in seconds
+    diff_seconds = (current_time - data_time).total_seconds()
+    
+    if diff_seconds < 0:
+        return "FUTURE"  # Data time is in future
+    
+    if diff_seconds < 60:
+        return "NEW"
+    elif diff_seconds < 3600:  # Less than 1 hour
+        minutes = int(diff_seconds // 60)
+        return f">{minutes}m"
+    elif diff_seconds < 86400:  # Less than 1 day
+        hours = int(diff_seconds // 3600)
+        return f">{hours}h"
+    else:  # 1 day or more
+        days = int(diff_seconds // 86400)
+        return f">{days}d"
 
 def get_inverter_status():
     """
     Query PVS6 device and display status of all inverters
-   Meant to be run from a Raspberry Pi connected to ethernet LAN port in PVS6
-
+    Meant to be run from a Raspberry Pi connected to ethernet LAN port in PVS6
     """
     url = "http://172.27.153.1/cgi-bin/dl_cgi?Command=DeviceList"
     
@@ -26,13 +68,34 @@ def get_inverter_status():
             print(f"Error: PVS6 returned result: {data.get('result')}")
             return
         
+        # Find current time from PVS device for time difference calculations
+        current_time = None
+        for device in data.get('devices', []):
+            if device.get('DEVICE_TYPE') == 'PVS':
+                current_time = device.get('CURTIME', '')
+                break
+        
         # Find all inverter devices
         inverters = []
         for device in data.get('devices', []):
-            descr = device.get('DESCR', '')
-            if 'Inverter' in descr:
+            if device.get('DEVICE_TYPE') == 'Inverter':
+                serial = device.get('SERIAL', 'Unknown')
+                descr = device.get('DESCR', f'Inverter {serial}')
+                state = device.get('STATE', 'Unknown')
                 state_descr = device.get('STATEDESCR', 'Unknown')
-                inverters.append((descr, state_descr))
+                data_time = device.get('DATATIME', '')
+                
+                # Calculate time difference for error states
+                time_indicator = ""
+                if state.lower() == 'error' and current_time and data_time:
+                    time_diff = get_time_diff_text(current_time, data_time)
+                    time_indicator = f" [{time_diff}]"
+                elif state.lower() == 'error' and data_time:
+                    time_indicator = " [?]"
+                elif state.lower() == 'error':
+                    time_indicator = " [NO DATA]"
+                
+                inverters.append((descr, state_descr + time_indicator))
         
         # Display results
         if inverters:
@@ -55,4 +118,4 @@ def get_inverter_status():
         print(f"Unexpected error: {e}")
 
 if __name__ == "__main__":
-    get_inverter_status() 
+    get_inverter_status()
