@@ -121,12 +121,12 @@ def get_inverter_status():
         # Display results with power comparison
         if inverters:
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            power_comparison = ""
             
             # Debug output
             print(f"Debug: Production meter power: {production_meter_power}kW")
             print(f"Debug: Total inverter power: {total_inverter_power}kW")
             
+            power_comparison = ""
             if production_meter_power > 0 or total_inverter_power > 0:
                 difference = abs(total_inverter_power - production_meter_power)
                 if production_meter_power > 0:
