@@ -110,7 +110,7 @@ def get_inverter_status():
                     ac_power = 0.0
 
                 if state.lower() == 'working':
-                    #hold for now                    
+                    #hold for now    
                 elif state.lower() == 'error':
                     # Add time difference for error states
                     if current_time and data_time:
@@ -119,9 +119,7 @@ def get_inverter_status():
                     elif data_time:
                         status_info += " [?]"
                     else:
-                        status_info += " [NO DATA]"
-                
-    
+                        status_info += " [NO DATA]"  
                                 
                 inverters.append((descr, status_info))
         
