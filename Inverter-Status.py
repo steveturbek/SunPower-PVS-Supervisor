@@ -109,9 +109,10 @@ def get_inverter_status():
                 except (ValueError, TypeError):
                     ac_power = 0.0
 
-                if state.lower() == 'working':
+                #if state.lower() == 'working':
                     #hold for now    
-                elif state.lower() == 'error':
+                #el
+                if state.lower() == 'error':
                     # Add time difference for error states
                     if current_time and data_time:
                         time_diff = get_time_diff_text(current_time, data_time)
