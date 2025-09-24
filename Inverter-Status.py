@@ -84,18 +84,24 @@ def get_inverter_status():
                 state = device.get('STATE', 'Unknown')
                 state_descr = device.get('STATEDESCR', 'Unknown')
                 data_time = device.get('DATATIME', '')
+                ac_power = device.get('p_3phsum_kw', 0)
                 
-                # Calculate time difference for error states
-                time_indicator = ""
-                if state.lower() == 'error' and current_time and data_time:
-                    time_diff = get_time_diff_text(current_time, data_time)
-                    time_indicator = f" [{time_diff}]"
-                elif state.lower() == 'error' and data_time:
-                    time_indicator = " [?]"
+                # Add power info for working inverters, time diff for error states
+                status_info = state_descr
+                if state.lower() == 'working':
+                    # Add current AC power production for working inverters
+                    status_info += f" {ac_power}kW"
                 elif state.lower() == 'error':
-                    time_indicator = " [NO DATA]"
+                    # Add time difference for error states
+                    if current_time and data_time:
+                        time_diff = get_time_diff_text(current_time, data_time)
+                        status_info += f" [{time_diff}]"
+                    elif data_time:
+                        status_info += " [?]"
+                    else:
+                        status_info += " [NO DATA]"
                 
-                inverters.append((descr, state_descr + time_indicator))
+                inverters.append((descr, status_info))
         
         # Display results
         if inverters:
