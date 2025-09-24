@@ -109,7 +109,7 @@ def get_inverter_status():
                     if ac_power !=  0.0: 
                         status_info += f" {ac_power:.3f}kW"
                         total_inverter_power += ac_power
-                        #print(f"Debug: ac_power: {ac_power}")
+                        print(f"Debug: ac_power: {ac_power}  total_inverter_power: {total_inverter_power}")
 
                 except (ValueError, TypeError):
                     ac_power = 0.0
