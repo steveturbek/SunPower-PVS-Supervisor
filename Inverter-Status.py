@@ -83,7 +83,7 @@ def get_inverter_status():
                 if 'meter-p' in device_type.lower() or 'production' in device_desc:
                     try:
                         production_meter_power = float(device.get('p_3phsum_kw', 0))
-                        print(f"Debug: Found production meter with {production_meter_power}kW")
+                       # print(f"Debug: Found production meter with {production_meter_power}kW")
                     except (ValueError, TypeError):
                         production_meter_power = 0.0
         
@@ -109,7 +109,7 @@ def get_inverter_status():
                     if ac_power !=  0.0: 
                         status_info += f" {ac_power:.3f}kW"
                         total_inverter_power += ac_power
-                        print(f"Debug: ac_power: {ac_power}  total_inverter_power: {total_inverter_power}")
+                       # print(f"Debug: ac_power: {ac_power}  total_inverter_power: {total_inverter_power}")
 
                 except (ValueError, TypeError):
                     ac_power = 0.0
@@ -134,8 +134,8 @@ def get_inverter_status():
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             
             # Debug output
-            print(f"Debug: Production meter power: {production_meter_power}kW")
-            print(f"Debug: Total inverter power: {total_inverter_power}kW")
+           # print(f"Debug: Production meter power: {production_meter_power}kW")
+            #print(f"Debug: Total inverter power: {total_inverter_power}kW")
             
             power_comparison = ""
             if production_meter_power > 0 or total_inverter_power > 0:
