@@ -100,11 +100,12 @@ If accessing the PVS6 via the ethernet port, use <pre>ip=echo -n "//172.27.153.1
 
 **Then you log in**
 
-<pre>curl
- -k 
--b cookies.txt 
--c cookies.txt 
--H "Authorization: basic $auth" 
+<pre>
+curl  \
+-k \
+-b cookies.txt \
+-c cookies.txt \
+-H "Authorization: basic $auth" \
 "https://$ip/auth?login"
  </pre>
 
@@ -112,20 +113,22 @@ _cookies.txt is a file containing cookies (used to store auth tokens) The script
 
 **Then you ask for al the data**
 
-<pre>curl
- -k 
--b cookies.txt 
--c cookies.txt 
-"https://$ip/vars?match=/"
+<pre>
+curl \
+ -k \
+-b cookies.txt \
+-c cookies.txt \
+"https://$ip/vars?match=/&fmt=obj"
  </pre>
 
 **Or you can make a file out of it**
 
-<pre>curl
- -k
--b cookies.txt
--c cookies.txt
-"https://$ip/vars?match=/" -o "$HOME/Desktop/PVS6output_$(date +%Y%m%d_%H%M%S).json"
+<pre>curl \
+ -k \
+-b cookies.txt \
+-c cookies.txt \
+"https://$ip/vars?match=/&fmt=obj" \
+-o "$HOME/Desktop/PVS6output_$(date +%Y%m%d_%H%M%S).json"
  </pre>
 
 _The chrome browser can open this JSON file and it is slightly easier to read_

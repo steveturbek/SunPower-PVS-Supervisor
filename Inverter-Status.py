@@ -3,166 +3,146 @@
 import requests
 import json
 import sys
+import base64
 from datetime import datetime
 
-def parse_pvs6_time(time_str):
-    """Parse PVS6 time format: '2025,08,27,15,07,18' to datetime object"""
-    if not time_str:
-        return None
-    try:
-        parts = time_str.split(',')
-        if len(parts) == 6:
-            year, month, day, hour, minute, second = map(int, parts)
-            return datetime(year, month, day, hour, minute, second)
-    except (ValueError, IndexError):
-        pass
-    return None
-
-def get_time_diff_text(current_time_str, data_time_str):
-    """
-    Calculate time difference and return formatted string
-    Returns 'NEW' if < 1 minute, otherwise '>Xm', '>Xh', or '>Xd'
-    """
-    current_time = parse_pvs6_time(current_time_str)
-    data_time = parse_pvs6_time(data_time_str)
-    
-    if not current_time or not data_time:
-        return "?"
-    
-    # Calculate difference in seconds
-    diff_seconds = (current_time - data_time).total_seconds()
-    
-    if diff_seconds < 0:
-        return "FUTURE"  # Data time is in future
-    
-    if diff_seconds < 60:
-        return "NEW"
-    elif diff_seconds < 3600:  # Less than 1 hour
-        minutes = int(diff_seconds // 60)
-        return f">{minutes}m"
-    elif diff_seconds < 86400:  # Less than 1 day
-        hours = int(diff_seconds // 3600)
-        return f">{hours}h"
-    else:  # 1 day or more
-        days = int(diff_seconds // 86400)
-        return f">{days}d"
+# Import config
+try:
+    from config import PVS6_IP, PVS6_SERIAL_LAST5
+except ImportError:
+    print("Error: config.py not found. Copy config.py.example to config.py and add your values.")
+    sys.exit(1)
 
 def get_inverter_status():
     """
-    Query PVS6 device and display status of all inverters
-    Meant to be run from a Raspberry Pi connected to ethernet LAN port in PVS6
+    Query PVS6 device and display status of all inverters using VASERVER API
     """
-    url = "http://172.27.153.1/cgi-bin/dl_cgi?Command=DeviceList"
+    # Create session with cookies
+    session = requests.Session()
+    
+    # Create basic auth header
+    auth_string = f"ssm_owner:{PVS6_SERIAL_LAST5}"
+    auth_bytes = auth_string.encode('ascii')
+    auth_b64 = base64.b64encode(auth_bytes).decode('ascii')
+    
+    base_url = f"https://{PVS6_IP}"
+    headers = {"Authorization": f"Basic {auth_b64}"}
     
     try:
-        # Make the HTTP request
+        # Step 1: Login
+        print("Authenticating with PVS6...")
+        login_response = session.get(
+            f"{base_url}/auth?login",
+            headers=headers,
+            verify=False,
+            timeout=10
+        )
+        login_response.raise_for_status()
+        
+        # Step 2: Get all data
         print("Querying PVS6 device...")
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()  # Raise an exception for bad status codes
+        data_response = session.get(
+            f"{base_url}/vars?match=/&fmt=obj",
+            verify=False,
+            timeout=10
+        )
+        data_response.raise_for_status()
         
         # Parse JSON response
-        data = response.json()
+        data = data_response.json()
         
-        # Check if we got a successful result
-        if data.get('result') != 'succeed':
-            print(f"Error: PVS6 returned result: {data.get('result')}")
+        # Extract livedata summary
+        pv_p = float(data.get('/sys/livedata/pv_p', 0))
+        pv_en = float(data.get('/sys/livedata/pv_en', 0))
+        net_p = float(data.get('/sys/livedata/net_p', 0))
+        site_load_p = float(data.get('/sys/livedata/site_load_p', 0))
+        
+        # Get production meter power for comparison
+        production_meter_power = float(data.get('/sys/devices/meter/0/p3phsumKw', 0))
+        
+        # Find all inverters and their power
+        inverters = []
+        total_inverter_power = 0.0
+        inverter_index = 0
+        
+        while True:
+            inverter_key = f'/sys/devices/inverter/{inverter_index}/sn'
+            if inverter_key not in data:
+                break
+            
+            serial = data.get(inverter_key, 'Unknown')
+            power = float(data.get(f'/sys/devices/inverter/{inverter_index}/p3phsumKw', 0))
+            energy = float(data.get(f'/sys/devices/inverter/{inverter_index}/ltea3phsumKwh', 0))
+            
+            inverters.append({
+                'serial': serial,
+                'power': power,
+                'energy': energy
+            })
+            total_inverter_power += power
+            inverter_index += 1
+        
+        # Display results
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        # Check data freshness - parse the meter timestamp
+        meter_time_str = data.get('/sys/devices/meter/0/msmtEps', '')
+        data_is_old = False
+        if meter_time_str:
+            try:
+                meter_time = datetime.strptime(meter_time_str, '%Y-%m-%dT%H:%M:%SZ')
+                now = datetime.utcnow()
+                minutes_old = (now - meter_time).total_seconds() / 60
+                if minutes_old > 15:  # Data older than 15 minutes
+                    data_is_old = True
+            except ValueError:
+                pass
+        
+        old_flag = " !OLD" if data_is_old else ""
+        
+        # Check if system is producing
+        if pv_p == 0 and total_inverter_power == 0:
+            print(f"\n⚠️  No solar production detected at {timestamp}")
+            print("This is normal at night or on very cloudy days.")
+            print(f"Lifetime production: {pv_en:.1f} kWh{old_flag}")
             return
         
-        # Find current time from PVS device and production meter for power comparison
-        current_time = None
-        production_meter_power = 0.0
-        total_inverter_power = 0.0  # Initialize here
+        print(f"\n=== Solar System Status at {timestamp} ===")
+        print(f"PV Production:  {pv_p:.3f} kW  (Lifetime: {pv_en:.1f} kWh)")
+        print(f"Net Power:      {net_p:.3f} kW  {'(exporting to grid)' if net_p < 0 else '(importing from grid)'}")
+        print(f"Site Load:      {site_load_p:.3f} kW")
+        print()
         
-        for device in data.get('devices', []):
-            if device.get('DEVICE_TYPE') == 'PVS':
-                current_time = device.get('CURTIME', '')
-            elif device.get('DEVICE_TYPE') == 'Power Meter':
-                # Check for production meter (TYPE contains "METER-P" or DESCR contains "production")
-                device_type = device.get('TYPE', '')
-                device_desc = device.get('DESCR', '').lower()
-                if 'meter-p' in device_type.lower() or 'production' in device_desc:
-                    try:
-                        production_meter_power = float(device.get('p_3phsum_kw', 0))
-                       # print(f"Debug: Found production meter with {production_meter_power}kW")
-                    except (ValueError, TypeError):
-                        production_meter_power = 0.0
-        
-        # Find all inverter devices
-        inverters = []
-        for device in data.get('devices', []):
-            if device.get('DEVICE_TYPE') == 'Inverter':
-                serial = device.get('SERIAL', 'Unknown')
-                descr = device.get('DESCR', f'Inverter {serial}')
-                state = device.get('STATE', 'Unknown')
-                state_descr = device.get('STATEDESCR', 'Unknown')
-                data_time = device.get('DATATIME', '')
-
-                
-                # Add power info for working inverters, time diff for error states
-                status_info = state_descr
-
-                # Get AC power, handle string/float conversion
-                try:
-                    ac_power = float(device.get('p_3phsum_kw', 0))
-                    # Add current AC power production for working inverters
-                    
-                    if ac_power !=  0.0: 
-                        status_info += f" {ac_power:.3f}kW"
-                        total_inverter_power += ac_power
-                       # print(f"Debug: ac_power: {ac_power}  total_inverter_power: {total_inverter_power}")
-
-                except (ValueError, TypeError):
-                    ac_power = 0.0
-
-                #if state.lower() == 'working':
-                    #hold for now    
-                #el
-                if state.lower() == 'error':
-                    # Add time difference for error states
-                    if current_time and data_time:
-                        time_diff = get_time_diff_text(current_time, data_time)
-                        status_info += f" [{time_diff}]"
-                    elif data_time:
-                        status_info += " [?]"
-                    #else:
-                        #status_info += " [NO DATA]"  
-                                
-                inverters.append((descr, status_info))
-        
-        # Display results with power comparison
         if inverters:
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            # Power comparison
+            difference = abs(total_inverter_power - production_meter_power)
+            percentage_diff = (difference / production_meter_power * 100) if production_meter_power > 0 else 0
             
-            # Debug output
-           # print(f"Debug: Production meter power: {production_meter_power}kW")
-            #print(f"Debug: Total inverter power: {total_inverter_power}kW")
-            
-            power_comparison = ""
-            if production_meter_power > 0 or total_inverter_power > 0:
-                difference = abs(total_inverter_power - production_meter_power)
-                if production_meter_power > 0:
-                    percentage_diff = (difference / production_meter_power * 100)
-                else:
-                    percentage_diff = 0
-                power_comparison = f" | Meter: {production_meter_power:.3f}kW | Sum: {total_inverter_power:.3f}kW | Diff: {difference:.3f}kW ({percentage_diff:.1f}%)"
-            
-            print(f"\nFound {len(inverters)} inverters{power_comparison} at {timestamp}:")
+            print(f"Found {len(inverters)} inverters | Meter: {production_meter_power:.3f}kW | Sum: {total_inverter_power:.3f}kW | Diff: {difference:.3f}kW ({percentage_diff:.1f}%)")
             print("-" * 80)
-            for i, (descr, state) in enumerate(inverters, 1):
-                print(f'{i:2d}. {descr}: {state}')
+            for i, inv in enumerate(inverters, 1):
+                print(f'{i:2d}. {inv["serial"]}: {inv["power"]:.3f} kW  (Lifetime: {inv["energy"]:.1f} kWh)')
         else:
-            print("No inverters found in response")
+            print("⚠️  No inverters found in response")
             
     except requests.exceptions.Timeout:
         print("Error: Request timed out. Is the PVS6 device accessible?")
     except requests.exceptions.ConnectionError:
-        print("Error: Could not connect to PVS6 device. Check network connection.")
+        print("Error: Could not connect to PVS6 device. Check network connection and config.py settings.")
     except requests.exceptions.RequestException as e:
         print(f"Error making request: {e}")
     except json.JSONDecodeError:
         print("Error: Invalid JSON response from PVS6")
+    except KeyError as e:
+        print(f"Error: Unexpected data format - missing key {e}")
     except Exception as e:
         print(f"Unexpected error: {e}")
+    finally:
+        session.close()
 
 if __name__ == "__main__":
+    # Disable SSL warnings for self-signed cert
+    import urllib3
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    
     get_inverter_status()

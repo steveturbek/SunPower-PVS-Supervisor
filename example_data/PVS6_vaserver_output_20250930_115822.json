@@ -110,7 +110,7 @@
   "/sys/devices/inverter/2/p3phsumKw": "0.153130",
   "/sys/devices/inverter/2/pMppt1Kw": "0.162990",
   "/sys/devices/inverter/2/prodMdlNm": "AC_Module_Type_E",
-  "/sys/devices/inverter/2/sn": "E00121948024216",
+  "/sys/devices/inverter/2/sn": "E00123456789",
   "/sys/devices/inverter/2/tHtsnkDegc": "36",
   "/sys/devices/inverter/2/vMppt1V": "54.799999",
   "/sys/devices/inverter/2/vln3phavgV": "208.630005",

@@ -4,3 +4,4 @@ config.py
 PVS6_output/*
 !PVS6_output/.gitkeep
 .DS_Store
+cookies.txt
