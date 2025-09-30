@@ -1,0 +1,4 @@
+#COPY or rename this file to config.py and put your values in it
+PVS6_IP = "172.27.153.1"  # or 172.27.153.1 for raspberry pi in PVS6 cabinet connected to ethernet port
+# If running on computer on local wifi, replace with the IP address of the PVS6 on your local network.  Will not work outside your local network.
+PVS6_SERIAL_LAST5 = "A1234"

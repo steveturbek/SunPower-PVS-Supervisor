@@ -176,5 +176,9 @@ The PVS6, when queried, returns JSON formatted data
 
 ## Detailed Script Description
 
-- `crontab -e` -edit crontab on raspberry pi
-- `*/15 6-21 * * * /home/pi/solar-monitor/venv/bin/python /home/pi/solar-monitor/solar_monitor.py >> /home/pi/solar-monitor/logs/solar.log 2>&1` Run every 15 minutes from 6 AM to 9 PM
+1. Get script / repo on your machine or raspberry pi. See log.md for tips
+1. Copy `config.example.py` to `config.py` and edit with your values
+1. Run program
+1. Inverter-Status.py is meant as a quick manual check on the status of the inverters. Meant to be run in a terminal on a local machine or SSH to a raspberry pi
+1. Run program on the regular with `crontab -e` -edit crontab on raspberry pi
+   `*/15 6-21 * * * /home/pi/solar-monitor/venv/bin/python /home/pi/solar-monitor/solar_monitor.py >> /home/pi/solar-monitor/logs/solar.log 2>&1` Run every 15 minutes from 6 AM to 9 PM
