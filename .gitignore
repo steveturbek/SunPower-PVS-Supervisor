@@ -1,6 +1,6 @@
 venv/
 .DS_Store
-output/
 config.py
-output/*
-!output/.gitkeep
+PVS6_output/*
+!PVS6_output/.gitkeep
+.DS_Store
