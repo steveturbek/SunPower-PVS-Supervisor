@@ -1,4 +1,6 @@
 venv/
 .DS_Store
-.DS_Store
-.DS_Store
+output/
+config.py
+output/*
+!output/.gitkeep
