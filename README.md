@@ -2,6 +2,14 @@
 
 Make a Raspberry Pi + python script to exfiltrate Photovoltaic solar data from unsupported hardware, without paying fees.
 
+## Background Inspiration
+
+For reference, this project was made for a SunPower PV system installed in 2019. Residential house in the northeast USA with a roof mounted system. 2 circuits, each with 6 Sunpower (actually Maxeon) PV panels & attached Enphase microinverters. No battery.
+
+Sadly, I had a microinverter go bad but did not learn about it until **years later** when another 5 died. I only noticed that half the system was down when our electric bill going up and went 'down the rabbit hole'. Monitoring should NOT be left up to the user! Solar has to be come more friendly or it will not catch on in America. This project is hopefully is a small contribution to that.
+
+The SunPower company sold perhaps ~586,000 installations before going backrupt. Luckily the panels and microinverters are under warranty, but the PVS monitoring unit is not. The PVS continues to send data to a server. A company SunStrong is selling app subscription to access the data.
+
 ## Approach
 
 The basic approach, demonstrated by other projects, is that the PVS6 has a small computer inside running a web server. If you plug a laptop or other deivce into the internal ethernet port, and go to a 'web page' made for technicians, it will output the current state of the system, but no history or alerting. A Raspberry Pi inserted in the PVS6 case periodically calls a python script to run the code in this github project to catch the status and save for the future.
@@ -10,29 +18,23 @@ We want to:
 
 1. Get the data off the PVS6, for future reference
 1. Make it available to review trends by non programmers, e.g. a spreadsheet
-1. Send me alerts if something goes wrong.
+1. Send alerts if something goes wrong.
 
-BUT we don't want a dashboard that I have to look at it!
+Not looking for a dashboard a person has to watch to look for errors- we all have enough to do!
 
 ### 2025 update to PVS firmware
 
-A recent update to the PVS update enables direct requests to the PVS, without a Raspberry Pi going to the ethernet port. This is cool, and a direction for future development, but
-
-## Background
-
-For reference, this project was made for a SunPower PV system installed in 2019. Residential house in the northeast USA with a roof mounted system. 2 circuits, each with 6 Sunpower (actually Maxeon) PV panels & attached Enphase microinverters.
-
-Sadly, I had a microinverter go bad but did not learn about it untill **years later** when another 5 died. I only noticed that when our electric bill going up and went' down the rabbit hole'. Monitoring should NOT be left up to the user! Solar has to be come more friendly or it will not catch on in america. This project is hopefully is a small contribution to that.
+A recent update to the PVS update enables direct requests to the PVS, without a Raspberry Pi going to the ethernet port. This is cool, and a direction for future development.
 
 ## Script Actions
 
 In this script, running on the Raspberry Pi
 
 1. Query the PVS6 web interface
-1. Save the output as a JSON file
+1. Save the output as a file
 1. Parses the JSON to extract key metrics
-1. Load a weather API to get how cloudy it is locally
-1. Save Parsed data to a local CSV file
+1. Load a weather API to get how cloudy it is locally and temperature
+1. Save parsed data to a local CSV file
 1. Submit data to add row to Google sheet via API
 1. Check for anomalies and send alerts
 1. Monthly summary by email
@@ -44,13 +46,13 @@ In this script, running on the Raspberry Pi
 
 ## References
 
-I am indebted to other projects that inspired and informed this project. I hope I can pay it back to help others
+**_I am indebted to other projects that inspired and informed this project. I hope I can pay it back to help others._**
 
 - [Gruby](https://blog.gruby.com/2020/04/28/monitoring-a-sunpower-solar-system/)
 - [ginoledesma/sunpower-pvs-exporter](https://github.com/ginoledesma/sunpower-pvs-exporter/blob/master/sunpower_pvs_notes.md)
 - [Starreveld](https://starreveld.com/PVS6%20Access%20and%20API.pdf)
 - [SunPower Docs and Python Code](https://github.com/SunStrong-Management/pypvs/tree/main)
-- [details examples on VASERVER parameters ](https://github.com/SunStrong-Management/pypvs/blob/main/doc/LocalAPI.md)
+- [documentation on VASERVER parameters ](https://github.com/SunStrong-Management/pypvs/blob/main/doc/LocalAPI.md)
 
 also
 
@@ -70,10 +72,8 @@ PVS6 were manufactured and sold in the US by SunPower, which unfotunately went o
 
 ### How does the PVS6 work?
 
-The PVS6 'listens' to certain circuits the Solar Panels & Microinverters are on. The microinverters send a message on the AC electical wiring, called "Power Line Communication".
-
-PVS6 also has white/black, white/red braided cables. These go to Current Transformers which measures electical current on your circuit breakers (estimates but accurate).
-PVS6 also get production data from micro inverters. NO wireless communication from micro inverters to PVS6.
+1. The PVS6 'listens' to certain circuits the Solar Panels & Microinverters are on. The microinverters send a message on the AC electical wiring, called "Power Line Communication". PVS6 get production data from micro inverters. NO wireless communication from micro inverters to PVS6.
+1. PVS6 also has white/black, white/red braided cables. These go to Current Transformers which measures electical current on your circuit breakers (estimates but accurate). The PVS6 has measurements for Consumption and Production
 
 The PVS6 does NOT talk to your electrical grid. These are all estimates, but said to be faily accurrate.
 
@@ -161,7 +161,7 @@ curl -k
 "https://$ip/vars?name=/sys/info/sw_rev,/sys/info/lmac&fmt=obj"
 </pre>
 
-**_Note there was until 2025 another command to access the info, calle_**
+**_Note there was until 2025 another command to access the info, called_**
 
 <pre>curl
    http://172.27.153.1/cgi-bin/dl_cgi?Command=DeviceList -o "$HOME/PVS6outputJSON/$(date +%Y%m%d\_%H%M%S).json"</pre>>
@@ -170,11 +170,9 @@ This is not supported when accessing the PVS6 directly, but may still work on th
 
 ### Understanding the data output
 
-The PVS6, when queried, returns JSON formatted data,
-
-example_data/PVS6_vaserver_output_20250930_115822.json
-
-example_data/PVS6_DL_CGI_output_example.json
+The PVS6, when queried, returns JSON formatted data
+[VASERVER example using &fmt=obj](example_data/PVS6_vaserver_output_20250930_115822.json)
+[older DL_CGI example](example_data/PVS6_DL_CGI_output_example.json)
 
 ## Detailed Script Description
 
