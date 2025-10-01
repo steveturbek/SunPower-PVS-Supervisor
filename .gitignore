@@ -8,4 +8,4 @@ PVS6_output/raw_JSON_output_files/*
 !PVS6_output/raw_JSON_output_files/.gitkeep
 .DS_Store
 cookies.txt
-collect-solar-data.log
+collect-solar-data-crontab.log
