@@ -26,7 +26,7 @@ We want to:
 
 ## Script Actions
 
-There are two scripts, running on the Raspberry Pi on a regular basis
+There are two scripts, running on the Raspberry Pi on a regular basis. It also works on my Mac, but a Raspberry Pi is more convenient and dependable for routine script running.
 
 ### collect-solar-data.py (every 15 minutes)
 
