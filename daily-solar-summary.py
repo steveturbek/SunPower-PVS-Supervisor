@@ -9,6 +9,7 @@ Checks for underperforming inverters, and alerts
 Emails monthly summary to admin email defined in config.py
 """
 
+
 import csv
 import sys
 import smtplib
