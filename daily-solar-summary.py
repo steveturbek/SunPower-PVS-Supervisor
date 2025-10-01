@@ -9,7 +9,6 @@ Checks for underperforming inverters, and alerts
 Emails monthly summary to admin email defined in config.py
 """
 
-
 import csv
 import sys
 import smtplib
@@ -135,7 +134,7 @@ class DailySolarSummary:
             return None
         
         daily_pv = float(last_overview['Lifetime PV Production (kWh)']) - float(first_overview['Lifetime PV Production (kWh)'])
-        daily_consumption = float(last_overview['Lifetime Site Consumption (kWh)']) - float(first_overview['Lifetime Site Consumption (kWh)'])
+        daily_consumption = float(last_overview['Lifetime Site Load (kWh)']) - float(first_overview['Lifetime Site Load (kWh)'])
         daily_net = float(last_overview['Lifetime Net (kWh)']) - float(first_overview['Lifetime Net (kWh)'])
         
         return {
@@ -143,7 +142,7 @@ class DailySolarSummary:
             'daily_consumption_kwh': daily_consumption,
             'daily_net_kwh': daily_net,
             'lifetime_pv_kwh': float(last_overview['Lifetime PV Production (kWh)']),
-            'lifetime_consumption_kwh': float(last_overview['Lifetime Site Consumption (kWh)']),
+            'lifetime_consumption_kwh': float(last_overview['Lifetime Site Load (kWh)']),
             'lifetime_net_kwh': float(last_overview['Lifetime Net (kWh)'])
         }
     
@@ -325,10 +324,10 @@ class DailySolarSummary:
             print("No monthly data available to send")
             return
         
-        # Calculate monthly totals
-        total_pv = sum(float(row['Daily PV Production (kWh)']) for row in month_data)
-        total_consumption = sum(float(row['Daily Site Consumption (kWh)']) for row in month_data)
-        total_net = sum(float(row['Daily Net Grid (kWh)']) for row in month_data)
+        # Calculate monthly totals (handle empty values)
+        total_pv = sum(float(row['Daily PV Production (kWh)']) if row.get('Daily PV Production (kWh)') else 0.0 for row in month_data)
+        total_consumption = sum(float(row['Daily Site Consumption (kWh)']) if row.get('Daily Site Consumption (kWh)') else 0.0 for row in month_data)
+        total_net = sum(float(row['Daily Net Grid (kWh)']) if row.get('Daily Net Grid (kWh)') else 0.0 for row in month_data)
         days_reporting = len(month_data)
         
         # Get previous year data for comparison
@@ -336,7 +335,7 @@ class DailySolarSummary:
         
         yoy_section = ""
         if prev_year_data:
-            prev_total_pv = sum(float(row['Daily PV Production (kWh)']) for row in prev_year_data)
+            prev_total_pv = sum(float(row['Daily PV Production (kWh)']) if row.get('Daily PV Production (kWh)') else 0.0 for row in prev_year_data)
             prev_days = len(prev_year_data)
             
             # Calculate percentage change
@@ -390,12 +389,17 @@ class DailySolarSummary:
             alert_cell = row.get('Alerts', '')
             alert_style = ' style="background-color: #fff3cd;"' if alert_cell else ''
             
+            # Handle empty values
+            pv_val = float(row['Daily PV Production (kWh)']) if row.get('Daily PV Production (kWh)') else 0.0
+            consumption_val = float(row['Daily Site Consumption (kWh)']) if row.get('Daily Site Consumption (kWh)') else 0.0
+            net_val = float(row['Daily Net Grid (kWh)']) if row.get('Daily Net Grid (kWh)') else 0.0
+            
             daily_table += f"""
             <tr{alert_style}>
                 <td>{row['Date']}</td>
-                <td>{float(row['Daily PV Production (kWh)']):.1f}</td>
-                <td>{float(row['Daily Site Consumption (kWh)']):.1f}</td>
-                <td>{float(row['Daily Net Grid (kWh)']):.1f}</td>
+                <td>{pv_val:.1f}</td>
+                <td>{consumption_val:.1f}</td>
+                <td>{net_val:.1f}</td>
                 <td>{alert_cell}</td>
             </tr>
             """
@@ -491,7 +495,7 @@ class DailySolarSummary:
                     'Daily Net Grid (kWh)',
                     'Lifetime PV (kWh)',
                     'Lifetime Site Consumption (kWh)',
-                    'Lifetime Net Grid (kWh)',
+                    'Lifetime Net (kWh)',
                     'Inverters Reporting',
                     'Alerts'
                 ]]
@@ -750,7 +754,12 @@ if __name__ == '__main__':
             
             with open(DAILY_SUMMARY_CSV, 'r') as f:
                 reader = csv.DictReader(f)
+                # Get column names from first row
+                first_row = True
                 for row in reader:
+                    if first_row:
+                        print(f"CSV columns: {list(row.keys())}")
+                        first_row = False
                     date = datetime.strptime(row['Date'], '%Y-%m-%d').date()
                     if date.month == target_month:
                         monthly_data_by_year[date.year].append(row)
@@ -767,10 +776,10 @@ if __name__ == '__main__':
             print(f"Using {month_abbr} {latest_year} as target month")
             print(f"Days of data: {len(month_data)}")
             
-            # Calculate monthly totals for target year
-            total_pv = sum(float(row['Daily PV Production (kWh)']) for row in month_data)
-            total_consumption = sum(float(row['Daily Site Consumption (kWh)']) for row in month_data)
-            total_net = sum(float(row['Daily Net Grid (kWh)']) for row in month_data)
+            # Calculate monthly totals for target year (handle empty values)
+            total_pv = sum(float(row['Daily PV Production (kWh)']) if row.get('Daily PV Production (kWh)') else 0.0 for row in month_data)
+            total_consumption = sum(float(row['Daily Site Consumption (kWh)']) if row.get('Daily Site Consumption (kWh)') else 0.0 for row in month_data)
+            total_net = sum(float(row['Daily Net Grid (kWh)']) if row.get('Daily Net Grid (kWh)') else 0.0 for row in month_data)
             days_reporting = len(month_data)
             
             # Create target_date for formatting
@@ -782,7 +791,7 @@ if __name__ == '__main__':
             
             if prev_year in monthly_data_by_year:
                 prev_year_data = monthly_data_by_year[prev_year]
-                prev_total_pv = sum(float(row['Daily PV Production (kWh)']) for row in prev_year_data)
+                prev_total_pv = sum(float(row['Daily PV Production (kWh)']) if row.get('Daily PV Production (kWh)') else 0.0 for row in prev_year_data)
                 prev_days = len(prev_year_data)
                 
                 pv_change = ((total_pv - prev_total_pv) / prev_total_pv * 100) if prev_total_pv > 0 else 0
@@ -825,7 +834,7 @@ if __name__ == '__main__':
                 <tr style="background-color: #f0f0f0;">
                     <th>Date</th>
                     <th>PV Production (kWh)</th>
-                    <th>Site Consumption (kWh)</th>
+                    <th>Site Load (kWh)</th>
                     <th>Net Grid (kWh)</th>
                     <th>Alerts</th>
                 </tr>
@@ -835,12 +844,17 @@ if __name__ == '__main__':
                 alert_cell = row.get('Alerts', '')
                 alert_style = ' style="background-color: #fff3cd;"' if alert_cell else ''
                 
+                # Handle empty values
+                pv_val = float(row['Daily PV Production (kWh)']) if row.get('Daily PV Production (kWh)') else 0.0
+                consumption_val = float(row['Daily Site Consumption (kWh)']) if row.get('Daily Site Consumption (kWh)') else 0.0
+                net_val = float(row['Daily Net Grid (kWh)']) if row.get('Daily Net Grid (kWh)') else 0.0
+                
                 daily_table += f"""
                 <tr{alert_style}>
                     <td>{row['Date']}</td>
-                    <td>{float(row['Daily PV Production (kWh)']):.1f}</td>
-                    <td>{float(row['Daily Site Consumption (kWh)']):.1f}</td>
-                    <td>{float(row['Daily Net Grid (kWh)']):.1f}</td>
+                    <td>{pv_val:.1f}</td>
+                    <td>{consumption_val:.1f}</td>
+                    <td>{net_val:.1f}</td>
                     <td>{alert_cell}</td>
                 </tr>
                 """
@@ -865,7 +879,7 @@ if __name__ == '__main__':
                         <td><strong>{total_pv:.1f} kWh</strong></td>
                     </tr>
                     <tr>
-                        <td>Total Site Consumption</td>
+                        <td>Total Site Load</td>
                         <td>{total_consumption:.1f} kWh</td>
                     </tr>
                     <tr>
