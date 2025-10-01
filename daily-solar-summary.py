@@ -152,8 +152,8 @@ class DailySolarSummary:
         
         for serial, data in inverter_data.items():
             if data['first'] and data['last']:
-                first_kwh = float(data['first']['Lifetime Energy (kWh)'])
-                last_kwh = float(data['last']['Lifetime Energy (kWh)'])
+                first_kwh = float(data['first']['Lifetime PV Production (kWh)'])
+                last_kwh = float(data['last']['Lifetime PV Production (kWh)'])
                 daily_production[serial] = last_kwh - first_kwh
         
         return daily_production
@@ -315,62 +315,78 @@ class DailySolarSummary:
     
     def send_monthly_summary(self, target_date):
         """Send monthly summary email on first day of month"""
-        subject = f"☀️ Solar Monthly Summary - {target_date.strftime('%B %Y')}"
         
-        # Get current month data
-        month_data = self.get_monthly_data(target_date)
-        
-        if not month_data:
+        # Get all monthly data from CSV to find all years with this month
+        if not DAILY_SUMMARY_CSV.exists():
             print("No monthly data available to send")
             return
         
-        # Calculate monthly totals (handle empty values)
-        total_pv = sum(float(row['Daily PV Production (kWh)']) if row.get('Daily PV Production (kWh)') else 0.0 for row in month_data)
-        total_consumption = sum(float(row['Daily Site Consumption (kWh)']) if row.get('Daily Site Consumption (kWh)') else 0.0 for row in month_data)
-        total_net = sum(float(row['Daily Net Grid (kWh)']) if row.get('Daily Net Grid (kWh)') else 0.0 for row in month_data)
-        days_reporting = len(month_data)
+        monthly_data_by_year = defaultdict(list)
+        lifetime_pv = None
         
-        # Get previous year data for comparison
-        prev_year_data = self.get_previous_year_month_data(target_date)
+        with open(DAILY_SUMMARY_CSV, 'r') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                date = datetime.strptime(row['Date'], '%Y-%m-%d').date()
+                if date.month == target_date.month:
+                    monthly_data_by_year[date.year].append(row)
+                # Get most recent lifetime value
+                if row.get('Lifetime PV (kWh)'):
+                    lifetime_pv = float(row['Lifetime PV (kWh)'])
         
-        yoy_section = ""
-        if prev_year_data:
-            prev_total_pv = sum(float(row['Daily PV Production (kWh)']) if row.get('Daily PV Production (kWh)') else 0.0 for row in prev_year_data)
-            prev_days = len(prev_year_data)
+        if not monthly_data_by_year:
+            print("No monthly data available to send")
+            return
+        
+        # Build lifetime info for subject line
+        lifetime_str = f" | Lifetime: {lifetime_pv:.0f} kWh" if lifetime_pv else ""
+        subject = f"☀️ Solar Monthly Summary - {target_date.strftime('%B %Y')}{lifetime_str}"
+        
+        # Build Year-over-Year comparison table with all years
+        yoy_table = """
+        <h3>Year-over-Year Comparison</h3>
+        <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
+            <tr style="background-color: #f0f0f0;">
+                <th>Year</th>
+                <th>Average Daily Production (kWh)</th>
+                <th>Monthly PV Production (kWh)</th>
+                <th>Monthly Site Consumption (kWh)</th>
+                <th>Monthly Net Grid (kWh)</th>
+            </tr>
+        """
+        
+        # Sort years in descending order
+        for year in sorted(monthly_data_by_year.keys(), reverse=True):
+            year_data = monthly_data_by_year[year]
             
-            # Calculate percentage change
-            pv_change = ((total_pv - prev_total_pv) / prev_total_pv * 100) if prev_total_pv > 0 else 0
-            change_color = "green" if pv_change >= 0 else "red"
-            change_symbol = "↑" if pv_change >= 0 else "↓"
+            # Calculate totals, handling empty values
+            total_pv = sum(float(row['Daily PV Production (kWh)']) if row.get('Daily PV Production (kWh)') else 0.0 for row in year_data)
+            total_consumption = sum(float(row['Daily Site Consumption (kWh)']) if row.get('Daily Site Consumption (kWh)') else 0.0 for row in year_data)
+            total_net = sum(float(row['Daily Net Grid (kWh)']) if row.get('Daily Net Grid (kWh)') else 0.0 for row in year_data)
+            days_reporting = len(year_data)
+            avg_daily = (total_pv / days_reporting) if days_reporting > 0 else 0
             
-            yoy_section = f"""
-            <h3>Year-over-Year Comparison</h3>
-            <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
-                <tr style="background-color: #f0f0f0;">
-                    <th>Metric</th>
-                    <th>{target_date.strftime('%B %Y')}</th>
-                    <th>{target_date.strftime('%B %Y').replace(str(target_date.year), str(target_date.year - 1))}</th>
-                    <th>Change</th>
-                </tr>
-                <tr>
-                    <td>Total Production</td>
-                    <td>{total_pv:.1f} kWh</td>
-                    <td>{prev_total_pv:.1f} kWh</td>
-                    <td style="color: {change_color};"><strong>{change_symbol} {abs(pv_change):.1f}%</strong></td>
-                </tr>
-                <tr>
-                    <td>Days Reporting</td>
-                    <td>{days_reporting}</td>
-                    <td>{prev_days}</td>
-                    <td>-</td>
-                </tr>
-            </table>
+            # Format values, show ? for zero values
+            avg_daily_str = f"{avg_daily:.1f}" if avg_daily > 0 else "?"
+            total_pv_str = f"{total_pv:.1f}" if total_pv > 0 else "?"
+            total_consumption_str = f"{total_consumption:.1f}" if total_consumption > 0 else "?"
+            total_net_str = f"{total_net:.1f}" if total_net > 0 else "?"
+            
+            yoy_table += f"""
+            <tr>
+                <td><strong>{year}</strong></td>
+                <td>{avg_daily_str}</td>
+                <td>{total_pv_str}</td>
+                <td>{total_consumption_str}</td>
+                <td>{total_net_str}</td>
+            </tr>
             """
-        else:
-            yoy_section = """
-            <h3>Year-over-Year Comparison</h3>
-            <p><em>No data available for previous year</em></p>
-            """
+        
+        yoy_table += "</table>"
+        
+        # Get current month data for daily breakdown
+        current_year = max(monthly_data_by_year.keys())
+        month_data = monthly_data_by_year[current_year]
         
         # Build daily data table
         daily_table = """
@@ -412,35 +428,7 @@ class DailySolarSummary:
         <body>
             <h2>Monthly Solar Summary - {target_date.strftime('%B %Y')}</h2>
             
-            <h3>Month Totals</h3>
-            <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
-                <tr style="background-color: #f0f0f0;">
-                    <th>Metric</th>
-                    <th>Value</th>
-                </tr>
-                <tr>
-                    <td>Total PV Production</td>
-                    <td><strong>{total_pv:.1f} kWh</strong></td>
-                </tr>
-                <tr>
-                    <td>Total Site Consumption</td>
-                    <td>{total_consumption:.1f} kWh</td>
-                </tr>
-                <tr>
-                    <td>Total Net Grid</td>
-                    <td>{total_net:.1f} kWh</td>
-                </tr>
-                <tr>
-                    <td>Days Reporting</td>
-                    <td>{days_reporting}</td>
-                </tr>
-                <tr>
-                    <td>Average Daily Production</td>
-                    <td>{total_pv/days_reporting:.1f} kWh</td>
-                </tr>
-            </table>
-            
-            {yoy_section}
+            {yoy_table}
             
             {daily_table}
             
@@ -776,56 +764,58 @@ if __name__ == '__main__':
             print(f"Using {month_abbr} {latest_year} as target month")
             print(f"Days of data: {len(month_data)}")
             
-            # Calculate monthly totals for target year (handle empty values)
-            total_pv = sum(float(row['Daily PV Production (kWh)']) if row.get('Daily PV Production (kWh)') else 0.0 for row in month_data)
-            total_consumption = sum(float(row['Daily Site Consumption (kWh)']) if row.get('Daily Site Consumption (kWh)') else 0.0 for row in month_data)
-            total_net = sum(float(row['Daily Net Grid (kWh)']) if row.get('Daily Net Grid (kWh)') else 0.0 for row in month_data)
-            days_reporting = len(month_data)
+            # Get lifetime value
+            lifetime_pv = None
+            if month_data and month_data[-1].get('Lifetime PV (kWh)'):
+                lifetime_pv = float(month_data[-1]['Lifetime PV (kWh)'])
+            
+            # Build lifetime info for subject line
+            lifetime_str = f" | Lifetime: {lifetime_pv:.0f} kWh" if lifetime_pv else ""
             
             # Create target_date for formatting
             target_date = datetime(latest_year, target_month, 1).date()
             
-            # Get previous year data for comparison
-            prev_year = latest_year - 1
-            yoy_section = ""
+            # Build Year-over-Year comparison table with all years
+            yoy_table = """
+            <h3>Year-over-Year Comparison</h3>
+            <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
+                <tr style="background-color: #f0f0f0;">
+                    <th>Year</th>
+                    <th>Average Daily Production (kWh)</th>
+                    <th>Monthly PV Production (kWh)</th>
+                    <th>Monthly Site Consumption (kWh)</th>
+                    <th>Monthly Net Grid (kWh)</th>
+                </tr>
+            """
             
-            if prev_year in monthly_data_by_year:
-                prev_year_data = monthly_data_by_year[prev_year]
-                prev_total_pv = sum(float(row['Daily PV Production (kWh)']) if row.get('Daily PV Production (kWh)') else 0.0 for row in prev_year_data)
-                prev_days = len(prev_year_data)
+            # Sort years in descending order
+            for year in sorted(monthly_data_by_year.keys(), reverse=True):
+                year_data = monthly_data_by_year[year]
                 
-                pv_change = ((total_pv - prev_total_pv) / prev_total_pv * 100) if prev_total_pv > 0 else 0
-                change_color = "green" if pv_change >= 0 else "red"
-                change_symbol = "↑" if pv_change >= 0 else "↓"
+                # Calculate totals, handling empty values
+                total_pv = sum(float(row['Daily PV Production (kWh)']) if row.get('Daily PV Production (kWh)') else 0.0 for row in year_data)
+                total_consumption = sum(float(row['Daily Site Consumption (kWh)']) if row.get('Daily Site Consumption (kWh)') else 0.0 for row in year_data)
+                total_net = sum(float(row['Daily Net Grid (kWh)']) if row.get('Daily Net Grid (kWh)') else 0.0 for row in year_data)
+                days_reporting = len(year_data)
+                avg_daily = (total_pv / days_reporting) if days_reporting > 0 else 0
                 
-                yoy_section = f"""
-                <h3>Year-over-Year Comparison</h3>
-                <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
-                    <tr style="background-color: #f0f0f0;">
-                        <th>Metric</th>
-                        <th>{target_date.strftime('%B %Y')}</th>
-                        <th>{target_date.strftime('%B %Y').replace(str(target_date.year), str(target_date.year - 1))}</th>
-                        <th>Change</th>
-                    </tr>
-                    <tr>
-                        <td>Total Production</td>
-                        <td>{total_pv:.1f} kWh</td>
-                        <td>{prev_total_pv:.1f} kWh</td>
-                        <td style="color: {change_color};"><strong>{change_symbol} {abs(pv_change):.1f}%</strong></td>
-                    </tr>
-                    <tr>
-                        <td>Days Reporting</td>
-                        <td>{days_reporting}</td>
-                        <td>{prev_days}</td>
-                        <td>-</td>
-                    </tr>
-                </table>
+                # Format values, show ? for zero values
+                avg_daily_str = f"{avg_daily:.1f}" if avg_daily > 0 else "?"
+                total_pv_str = f"{total_pv:.1f}" if total_pv > 0 else "?"
+                total_consumption_str = f"{total_consumption:.1f}" if total_consumption > 0 else "?"
+                total_net_str = f"{total_net:.1f}" if total_net > 0 else "?"
+                
+                yoy_table += f"""
+                <tr>
+                    <td><strong>{year}</strong></td>
+                    <td>{avg_daily_str}</td>
+                    <td>{total_pv_str}</td>
+                    <td>{total_consumption_str}</td>
+                    <td>{total_net_str}</td>
+                </tr>
                 """
-            else:
-                yoy_section = """
-                <h3>Year-over-Year Comparison</h3>
-                <p><em>No data available for previous year</em></p>
-                """
+            
+            yoy_table += "</table>"
             
             # Build daily data table
             daily_table = """
@@ -834,7 +824,7 @@ if __name__ == '__main__':
                 <tr style="background-color: #f0f0f0;">
                     <th>Date</th>
                     <th>PV Production (kWh)</th>
-                    <th>Site Load (kWh)</th>
+                    <th>Site Consumption (kWh)</th>
                     <th>Net Grid (kWh)</th>
                     <th>Alerts</th>
                 </tr>
@@ -868,35 +858,7 @@ if __name__ == '__main__':
                 <h2>Monthly Solar Summary - {target_date.strftime('%B %Y')} (TEST with REAL DATA)</h2>
                 <p><em style="color: blue;">This is a test email using real data from {DAILY_SUMMARY_CSV}</em></p>
                 
-                <h3>Month Totals</h3>
-                <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
-                    <tr style="background-color: #f0f0f0;">
-                        <th>Metric</th>
-                        <th>Value</th>
-                    </tr>
-                    <tr>
-                        <td>Total PV Production</td>
-                        <td><strong>{total_pv:.1f} kWh</strong></td>
-                    </tr>
-                    <tr>
-                        <td>Total Site Load</td>
-                        <td>{total_consumption:.1f} kWh</td>
-                    </tr>
-                    <tr>
-                        <td>Total Net Grid</td>
-                        <td>{total_net:.1f} kWh</td>
-                    </tr>
-                    <tr>
-                        <td>Days Reporting</td>
-                        <td>{days_reporting}</td>
-                    </tr>
-                    <tr>
-                        <td>Average Daily Production</td>
-                        <td>{total_pv/days_reporting:.1f} kWh</td>
-                    </tr>
-                </table>
-                
-                {yoy_section}
+                {yoy_table}
                 
                 {daily_table}
                 
@@ -908,7 +870,7 @@ if __name__ == '__main__':
             """
             
             success = summary.send_email(
-                f"☀️ Solar Monthly Summary - {target_date.strftime('%B %Y')} (TEST)", 
+                f"☀️ Solar Monthly Summary - {target_date.strftime('%B %Y')}{lifetime_str} (TEST)", 
                 html
             )
             
@@ -969,42 +931,46 @@ if __name__ == '__main__':
                 'Alerts': alert
             })
         
-        # Build the monthly summary email with fake data
-        total_pv = sum(float(row['Daily PV Production (kWh)']) for row in fake_month_data)
-        total_consumption = sum(float(row['Daily Site Consumption (kWh)']) for row in fake_month_data)
-        total_net = sum(float(row['Daily Net Grid (kWh)']) for row in fake_month_data)
-        days_reporting = len(fake_month_data)
+        # Simulate lifetime value
+        lifetime_pv = 27868.0
+        lifetime_str = f" | Lifetime: {lifetime_pv:.0f} kWh"
         
-        # Simulate previous year data
-        prev_total_pv = total_pv * random.uniform(0.85, 1.05)  # +/- 15%
-        prev_days = days_reporting
-        pv_change = ((total_pv - prev_total_pv) / prev_total_pv * 100) if prev_total_pv > 0 else 0
-        change_color = "green" if pv_change >= 0 else "red"
-        change_symbol = "↑" if pv_change >= 0 else "↓"
-        
-        yoy_section = f"""
+        # Build Year-over-Year comparison table with simulated multi-year data
+        yoy_table = """
         <h3>Year-over-Year Comparison</h3>
         <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
             <tr style="background-color: #f0f0f0;">
-                <th>Metric</th>
-                <th>{target_date.strftime('%B %Y')}</th>
-                <th>{target_date.strftime('%B %Y').replace(str(target_date.year), str(target_date.year - 1))}</th>
-                <th>Change</th>
+                <th>Year</th>
+                <th>Average Daily Production (kWh)</th>
+                <th>Monthly PV Production (kWh)</th>
+                <th>Monthly Site Consumption (kWh)</th>
+                <th>Monthly Net Grid (kWh)</th>
             </tr>
-            <tr>
-                <td>Total Production</td>
-                <td>{total_pv:.1f} kWh</td>
-                <td>{prev_total_pv:.1f} kWh</td>
-                <td style="color: {change_color};"><strong>{change_symbol} {abs(pv_change):.1f}%</strong></td>
-            </tr>
-            <tr>
-                <td>Days Reporting</td>
-                <td>{days_reporting}</td>
-                <td>{prev_days}</td>
-                <td>-</td>
-            </tr>
-        </table>
         """
+        
+        # Simulate data for current year and previous 2 years
+        for year_offset in range(0, 3):
+            year = target_date.year - year_offset
+            
+            # Simulate varying performance across years
+            base_monthly = 600.0
+            variation = random.uniform(-100, 100)
+            total_pv = base_monthly + variation
+            total_consumption = random.uniform(550, 700)
+            total_net = total_consumption - total_pv
+            avg_daily = total_pv / 30
+            
+            yoy_table += f"""
+            <tr>
+                <td><strong>{year}</strong></td>
+                <td>{avg_daily:.1f}</td>
+                <td>{total_pv:.1f}</td>
+                <td>{total_consumption:.1f}</td>
+                <td>{total_net:.1f}</td>
+            </tr>
+            """
+        
+        yoy_table += "</table>"
         
         # Build daily data table
         daily_table = """
@@ -1042,35 +1008,7 @@ if __name__ == '__main__':
             <h2>Monthly Solar Summary - {target_date.strftime('%B %Y')} (TEST DATA)</h2>
             <p><em style="color: red;">This is a test email with simulated data</em></p>
             
-            <h3>Month Totals</h3>
-            <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
-                <tr style="background-color: #f0f0f0;">
-                    <th>Metric</th>
-                    <th>Value</th>
-                </tr>
-                <tr>
-                    <td>Total PV Production</td>
-                    <td><strong>{total_pv:.1f} kWh</strong></td>
-                </tr>
-                <tr>
-                    <td>Total Site Consumption</td>
-                    <td>{total_consumption:.1f} kWh</td>
-                </tr>
-                <tr>
-                    <td>Total Net Grid</td>
-                    <td>{total_net:.1f} kWh</td>
-                </tr>
-                <tr>
-                    <td>Days Reporting</td>
-                    <td>{days_reporting}</td>
-                </tr>
-                <tr>
-                    <td>Average Daily Production</td>
-                    <td>{total_pv/days_reporting:.1f} kWh</td>
-                </tr>
-            </table>
-            
-            {yoy_section}
+            {yoy_table}
             
             {daily_table}
             
@@ -1081,7 +1019,10 @@ if __name__ == '__main__':
         </html>
         """
         
-        success = summary.send_email(f"☀️ Solar Monthly Summary - {target_date.strftime('%B %Y')} (TEST)", html)
+        success = summary.send_email(
+            f"☀️ Solar Monthly Summary - {target_date.strftime('%B %Y')}{lifetime_str} (TEST)", 
+            html
+        )
         
         if success:
             print("\n✅ Test monthly email sent successfully!")
@@ -1101,4 +1042,3 @@ if __name__ == '__main__':
             sys.exit(1)
     else:
         summary.run(days_ago=1)  # Default: yesterday
-        
