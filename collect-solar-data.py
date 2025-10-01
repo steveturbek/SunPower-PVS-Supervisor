@@ -28,6 +28,7 @@ class SolarDataCollector:
     def __init__(self):
         # Ensure output directory exists
         OUTPUT_DIR.mkdir(exist_ok=True)
+        (OUTPUT_DIR / 'raw_JSON_output_files').mkdir(exist_ok=True)
     
     def fetch_pvs6_data(self):
         """Fetch data from PVS6 using VASERVER API"""
@@ -83,15 +84,19 @@ class SolarDataCollector:
         """Extract overview data from PVS6 response"""
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
-        # Get livedata summary
+        # Get livedata summary - both instantaneous and lifetime
         pv_en = float(pvs6_data.get('/sys/livedata/pv_en', 0))
         pv_p = float(pvs6_data.get('/sys/livedata/pv_p', 0))
         site_load_p = float(pvs6_data.get('/sys/livedata/site_load_p', 0))
+        site_load_en = float(pvs6_data.get('/sys/livedata/site_load_en', 0))
         net_p = float(pvs6_data.get('/sys/livedata/net_p', 0))
+        net_en = float(pvs6_data.get('/sys/livedata/net_en', 0))
         
         return {
             'timestamp': timestamp,
             'lifetime_pv_kwh': pv_en,
+            'lifetime_site_load_kwh': site_load_en,
+            'lifetime_net_kwh': net_en,
             'current_pv_kw': pv_p,
             'current_consumption_kw': site_load_p,
             'net_power_kw': net_p
@@ -143,16 +148,20 @@ class SolarDataCollector:
                 if not file_exists:
                     writer.writerow([
                         'Timestamp', 
-                        'Lifetime PV Production (kWh)', 
+                        'Lifetime PV Production (kWh)',
+                        'Lifetime Site Load (kWh)',
+                        'Lifetime Net (kWh)',
                         'Current PV Production (kW)', 
                         'Current Consumption (kW)', 
-                        'Net Power (kW)'
+                        'Current Net Power (kW)'
                     ])
                 
                 # Write data row
                 writer.writerow([
                     data['timestamp'],
                     data['lifetime_pv_kwh'],
+                    data['lifetime_site_load_kwh'],
+                    data['lifetime_net_kwh'],
                     data['current_pv_kw'],
                     data['current_consumption_kw'],
                     data['net_power_kw']
@@ -178,7 +187,7 @@ class SolarDataCollector:
                         'Timestamp', 
                         'Serial Number', 
                         'State', 
-                        'Current PV Production (kW)', 
+                        'Current PV Production  (kW)', 
                         'Lifetime PV Production (kWh)'
                     ])
                 
@@ -224,6 +233,7 @@ class SolarDataCollector:
             print("\nProcessing overview data...")
             overview_data = self.parse_overview_data(pvs6_data)
             print(f"Overview: {overview_data['current_pv_kw']:.3f} kW production")
+            print(f"Lifetime: PV={overview_data['lifetime_pv_kwh']:.1f} kWh, Load={overview_data['lifetime_site_load_kwh']:.1f} kWh, Net={overview_data['lifetime_net_kwh']:.1f} kWh")
             self.write_overview_to_csv(overview_data)
             
             # Parse and write inverter data
