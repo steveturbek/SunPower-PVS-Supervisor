@@ -14,6 +14,8 @@ The SunPower company sold perhaps ~586,000 installations before going backrupt. 
 
 The basic approach, demonstrated by other projects, is that the PVS6 has a small computer inside running a web server. If you plug a laptop or other deivce into the internal ethernet port, and go to a 'web page' made for technicians, it will output the current state of the system, but no history or alerting. A Raspberry Pi inserted in the PVS6 case periodically calls a python script to run the code in this github project to catch the status and save for the future.
 
+![Photo of a Raspberry Pi gently nestled in the loving embrace of a SunPower PVS6, powered by USB cable, and connected to the LAN1 ehternet port](RaspberryPI-in-PVS6.jpeg "Photo of a Raspberry Pi gently nestled in the loving embrace of a SunPower PVS6, powered by USB cable, and connected to the LAN1 ehternet port")
+
 We want to:
 
 1. Get the data off the PVS6, for future reference
