@@ -165,7 +165,6 @@ class DailySolarSummary:
             print("Google Sheets not available, skipping")
             return
         
-        # Prepare the summary row
         date_str = date.strftime('%Y-%m-%d')
         
         # Build alert text
@@ -228,9 +227,32 @@ class DailySolarSummary:
         except Exception as e:
             print(f"❌ Error writing to Google Sheets: {e}")
     
-    def write_to_local_csv(self, date, daily_totals, daily_production, underperformers):
-        """Write daily summary to local CSV"""
+    def date_exists_in_csv(self, date):
+        """Check if date already exists in local CSV"""
+        if not DAILY_SUMMARY_CSV.exists():
+            return False
+        
         date_str = date.strftime('%Y-%m-%d')
+        
+        try:
+            with open(DAILY_SUMMARY_CSV, 'r') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    if row['Date'] == date_str:
+                        return True
+        except Exception:
+            pass
+        
+        return False
+    
+    def write_to_local_csv(self, date, daily_totals, daily_production, underperformers):
+        """Write daily summary to local CSV - returns True if written, False if skipped"""
+        date_str = date.strftime('%Y-%m-%d')
+        
+        # Check if date already exists
+        if self.date_exists_in_csv(date):
+            print(f"⚠️  Date {date_str} already exists in {DAILY_SUMMARY_CSV}, skipping")
+            return False
         
         # Build alert text
         alert_text = ""
@@ -273,9 +295,11 @@ class DailySolarSummary:
                 ])
             
             print(f"✅ Appended to local CSV: {DAILY_SUMMARY_CSV}")
+            return True
             
         except Exception as e:
             print(f"❌ Error writing to local CSV: {e}")
+            return False
     
     def run(self, days_ago=1):
         """Run daily summary for specified day (default: yesterday)"""
@@ -329,12 +353,14 @@ class DailySolarSummary:
         
         # Write to local CSV
         print("\nWriting to local CSV...")
-        self.write_to_local_csv(target_date, daily_totals, daily_production, underperformers)
+        written = self.write_to_local_csv(target_date, daily_totals, daily_production, underperformers)
         
-        # Write to Google Sheets if enabled
-        if self.sheets_enabled:
+        # Write to Google Sheets only if local CSV was written
+        if written and self.sheets_enabled:
             print("\nWriting to Google Sheets...")
             self.write_to_google_sheets(target_date, daily_totals, daily_production, underperformers)
+        elif not written:
+            print("\nSkipping Google Sheets (duplicate date)")
         
         print("\n✅ Daily summary completed!")
 
