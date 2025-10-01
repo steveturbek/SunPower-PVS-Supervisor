@@ -134,15 +134,15 @@ class DailySolarSummary:
             return None
         
         daily_pv = float(last_overview['Lifetime PV Production (kWh)']) - float(first_overview['Lifetime PV Production (kWh)'])
-        daily_load = float(last_overview['Lifetime Site Load (kWh)']) - float(first_overview['Lifetime Site Load (kWh)'])
+        daily_consumption = float(last_overview['Lifetime Site Consumption (kWh)']) - float(first_overview['Lifetime Site Consumption (kWh)'])
         daily_net = float(last_overview['Lifetime Net (kWh)']) - float(first_overview['Lifetime Net (kWh)'])
         
         return {
             'daily_pv_kwh': daily_pv,
-            'daily_load_kwh': daily_load,
+            'daily_consumption_kwh': daily_consumption,
             'daily_net_kwh': daily_net,
             'lifetime_pv_kwh': float(last_overview['Lifetime PV Production (kWh)']),
-            'lifetime_load_kwh': float(last_overview['Lifetime Site Load (kWh)']),
+            'lifetime_consumption_kwh': float(last_overview['Lifetime Site Consumption (kWh)']),
             'lifetime_net_kwh': float(last_overview['Lifetime Net (kWh)'])
         }
     
@@ -326,7 +326,7 @@ class DailySolarSummary:
         
         # Calculate monthly totals
         total_pv = sum(float(row['Daily PV Production (kWh)']) for row in month_data)
-        total_load = sum(float(row['Daily Site Load (kWh)']) for row in month_data)
+        total_consumption = sum(float(row['Daily Site Consumption (kWh)']) for row in month_data)
         total_net = sum(float(row['Daily Net Grid (kWh)']) for row in month_data)
         days_reporting = len(month_data)
         
@@ -379,7 +379,7 @@ class DailySolarSummary:
             <tr style="background-color: #f0f0f0;">
                 <th>Date</th>
                 <th>PV Production (kWh)</th>
-                <th>Site Load (kWh)</th>
+                <th>Site Consumption (kWh)</th>
                 <th>Net Grid (kWh)</th>
                 <th>Alerts</th>
             </tr>
@@ -393,7 +393,7 @@ class DailySolarSummary:
             <tr{alert_style}>
                 <td>{row['Date']}</td>
                 <td>{float(row['Daily PV Production (kWh)']):.1f}</td>
-                <td>{float(row['Daily Site Load (kWh)']):.1f}</td>
+                <td>{float(row['Daily Site Consumption (kWh)']):.1f}</td>
                 <td>{float(row['Daily Net Grid (kWh)']):.1f}</td>
                 <td>{alert_cell}</td>
             </tr>
@@ -418,8 +418,8 @@ class DailySolarSummary:
                     <td><strong>{total_pv:.1f} kWh</strong></td>
                 </tr>
                 <tr>
-                    <td>Total Site Load</td>
-                    <td>{total_load:.1f} kWh</td>
+                    <td>Total Site Consumption</td>
+                    <td>{total_consumption:.1f} kWh</td>
                 </tr>
                 <tr>
                     <td>Total Net Grid</td>
@@ -465,10 +465,10 @@ class DailySolarSummary:
         row = [
             date_str,
             daily_totals['daily_pv_kwh'],
-            daily_totals['daily_load_kwh'],
+            daily_totals['daily_consumption_kwh'],
             daily_totals['daily_net_kwh'],
             daily_totals['lifetime_pv_kwh'],
-            daily_totals['lifetime_load_kwh'],
+            daily_totals['lifetime_consumption_kwh'],
             daily_totals['lifetime_net_kwh'],
             len(daily_production),
             alert_text
@@ -486,11 +486,11 @@ class DailySolarSummary:
                 headers = [[
                     'Date',
                     'Daily PV Production (kWh)',
-                    'Daily Site Load (kWh)',
+                    'Daily Site Consumption (kWh)',
                     'Daily Net Grid (kWh)',
                     'Lifetime PV (kWh)',
-                    'Lifetime Load (kWh)',
-                    'Lifetime Net (kWh)',
+                    'Lifetime Site Consumption (kWh)',
+                    'Lifetime Net Grid (kWh)',
                     'Inverters Reporting',
                     'Alerts'
                 ]]
@@ -561,10 +561,10 @@ class DailySolarSummary:
                     writer.writerow([
                         'Date',
                         'Daily PV Production (kWh)',
-                        'Daily Site Load (kWh)',
+                        'Daily Site Consumption (kWh)',
                         'Daily Net Grid (kWh)',
                         'Lifetime PV (kWh)',
-                        'Lifetime Load (kWh)',
+                        'Lifetime Site Consumption (kWh)',
                         'Lifetime Net (kWh)',
                         'Inverters Reporting',
                         'Alerts'
@@ -574,10 +574,10 @@ class DailySolarSummary:
                 writer.writerow([
                     date_str,
                     daily_totals['daily_pv_kwh'],
-                    daily_totals['daily_load_kwh'],
+                    daily_totals['daily_consumption_kwh'],
                     daily_totals['daily_net_kwh'],
                     daily_totals['lifetime_pv_kwh'],
-                    daily_totals['lifetime_load_kwh'],
+                    daily_totals['lifetime_consumption_kwh'],
                     daily_totals['lifetime_net_kwh'],
                     len(daily_production),
                     alert_text
@@ -619,7 +619,7 @@ class DailySolarSummary:
         
         if daily_totals:
             print(f"  Daily PV Production: {daily_totals['daily_pv_kwh']:.2f} kWh")
-            print(f"  Daily Site Load: {daily_totals['daily_load_kwh']:.2f} kWh")
+            print(f"  Daily Site Consumption: {daily_totals['daily_consumption_kwh']:.2f} kWh")
             print(f"  Daily Net Grid: {daily_totals['daily_net_kwh']:.2f} kWh")
         
         # Calculate inverter daily production
@@ -717,6 +717,198 @@ if __name__ == '__main__':
         
         sys.exit(0)
     
+    # Check for test monthly email flag with real data
+    if len(sys.argv) > 1 and sys.argv[1].startswith('--test-'):
+        month_abbr = sys.argv[1].replace('--test-', '').upper()
+        
+        # Map month abbreviations to numbers
+        month_map = {
+            'JAN': 1, 'FEB': 2, 'MAR': 3, 'APR': 4, 'MAY': 5, 'JUN': 6,
+            'JUL': 7, 'AUG': 8, 'SEP': 9, 'OCT': 10, 'NOV': 11, 'DEC': 12
+        }
+        
+        if month_abbr == 'MONTHLY':
+            # Already handled above
+            pass
+        elif month_abbr in month_map:
+            if not EMAIL_ENABLED:
+                print("❌ Email not configured. Check config.py settings.")
+                sys.exit(1)
+            
+            if not DAILY_SUMMARY_CSV.exists():
+                print(f"❌ No data file found: {DAILY_SUMMARY_CSV}")
+                sys.exit(1)
+            
+            target_month = month_map[month_abbr]
+            
+            print(f"Testing monthly summary email for {month_abbr} using real data...")
+            print(f"Reading from: {DAILY_SUMMARY_CSV}")
+            
+            # Find all years with data for this month
+            monthly_data_by_year = defaultdict(list)
+            
+            with open(DAILY_SUMMARY_CSV, 'r') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    date = datetime.strptime(row['Date'], '%Y-%m-%d').date()
+                    if date.month == target_month:
+                        monthly_data_by_year[date.year].append(row)
+            
+            if not monthly_data_by_year:
+                print(f"❌ No data found for {month_abbr} in {DAILY_SUMMARY_CSV}")
+                sys.exit(1)
+            
+            # Use the most recent year as target
+            latest_year = max(monthly_data_by_year.keys())
+            month_data = monthly_data_by_year[latest_year]
+            
+            print(f"Found data for {month_abbr} in years: {sorted(monthly_data_by_year.keys())}")
+            print(f"Using {month_abbr} {latest_year} as target month")
+            print(f"Days of data: {len(month_data)}")
+            
+            # Calculate monthly totals for target year
+            total_pv = sum(float(row['Daily PV Production (kWh)']) for row in month_data)
+            total_consumption = sum(float(row['Daily Site Consumption (kWh)']) for row in month_data)
+            total_net = sum(float(row['Daily Net Grid (kWh)']) for row in month_data)
+            days_reporting = len(month_data)
+            
+            # Create target_date for formatting
+            target_date = datetime(latest_year, target_month, 1).date()
+            
+            # Get previous year data for comparison
+            prev_year = latest_year - 1
+            yoy_section = ""
+            
+            if prev_year in monthly_data_by_year:
+                prev_year_data = monthly_data_by_year[prev_year]
+                prev_total_pv = sum(float(row['Daily PV Production (kWh)']) for row in prev_year_data)
+                prev_days = len(prev_year_data)
+                
+                pv_change = ((total_pv - prev_total_pv) / prev_total_pv * 100) if prev_total_pv > 0 else 0
+                change_color = "green" if pv_change >= 0 else "red"
+                change_symbol = "↑" if pv_change >= 0 else "↓"
+                
+                yoy_section = f"""
+                <h3>Year-over-Year Comparison</h3>
+                <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
+                    <tr style="background-color: #f0f0f0;">
+                        <th>Metric</th>
+                        <th>{target_date.strftime('%B %Y')}</th>
+                        <th>{target_date.strftime('%B %Y').replace(str(target_date.year), str(target_date.year - 1))}</th>
+                        <th>Change</th>
+                    </tr>
+                    <tr>
+                        <td>Total Production</td>
+                        <td>{total_pv:.1f} kWh</td>
+                        <td>{prev_total_pv:.1f} kWh</td>
+                        <td style="color: {change_color};"><strong>{change_symbol} {abs(pv_change):.1f}%</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Days Reporting</td>
+                        <td>{days_reporting}</td>
+                        <td>{prev_days}</td>
+                        <td>-</td>
+                    </tr>
+                </table>
+                """
+            else:
+                yoy_section = """
+                <h3>Year-over-Year Comparison</h3>
+                <p><em>No data available for previous year</em></p>
+                """
+            
+            # Build daily data table
+            daily_table = """
+            <h3>Daily Breakdown</h3>
+            <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
+                <tr style="background-color: #f0f0f0;">
+                    <th>Date</th>
+                    <th>PV Production (kWh)</th>
+                    <th>Site Consumption (kWh)</th>
+                    <th>Net Grid (kWh)</th>
+                    <th>Alerts</th>
+                </tr>
+            """
+            
+            for row in month_data:
+                alert_cell = row.get('Alerts', '')
+                alert_style = ' style="background-color: #fff3cd;"' if alert_cell else ''
+                
+                daily_table += f"""
+                <tr{alert_style}>
+                    <td>{row['Date']}</td>
+                    <td>{float(row['Daily PV Production (kWh)']):.1f}</td>
+                    <td>{float(row['Daily Site Consumption (kWh)']):.1f}</td>
+                    <td>{float(row['Daily Net Grid (kWh)']):.1f}</td>
+                    <td>{alert_cell}</td>
+                </tr>
+                """
+            
+            daily_table += "</table>"
+            
+            # Build complete HTML email
+            html = f"""
+            <html>
+            <body>
+                <h2>Monthly Solar Summary - {target_date.strftime('%B %Y')} (TEST with REAL DATA)</h2>
+                <p><em style="color: blue;">This is a test email using real data from {DAILY_SUMMARY_CSV}</em></p>
+                
+                <h3>Month Totals</h3>
+                <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
+                    <tr style="background-color: #f0f0f0;">
+                        <th>Metric</th>
+                        <th>Value</th>
+                    </tr>
+                    <tr>
+                        <td>Total PV Production</td>
+                        <td><strong>{total_pv:.1f} kWh</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Total Site Consumption</td>
+                        <td>{total_consumption:.1f} kWh</td>
+                    </tr>
+                    <tr>
+                        <td>Total Net Grid</td>
+                        <td>{total_net:.1f} kWh</td>
+                    </tr>
+                    <tr>
+                        <td>Days Reporting</td>
+                        <td>{days_reporting}</td>
+                    </tr>
+                    <tr>
+                        <td>Average Daily Production</td>
+                        <td>{total_pv/days_reporting:.1f} kWh</td>
+                    </tr>
+                </table>
+                
+                {yoy_section}
+                
+                {daily_table}
+                
+                <p style="margin-top: 20px; color: #666; font-size: 0.9em;">
+                    This is an automated monthly summary from your solar monitoring system.
+                </p>
+            </body>
+            </html>
+            """
+            
+            success = summary.send_email(
+                f"☀️ Solar Monthly Summary - {target_date.strftime('%B %Y')} (TEST)", 
+                html
+            )
+            
+            if success:
+                print("\n✅ Test monthly email sent successfully!")
+                print("Check your inbox to review the layout and style with real data.")
+            else:
+                print("\n❌ Failed to send test email.")
+            
+            sys.exit(0)
+        else:
+            print(f"Unknown test option: {sys.argv[1]}")
+            print("Usage: --test-JAN, --test-FEB, --test-MAR, etc.")
+            sys.exit(1)
+    
     # Check for test monthly email flag
     if len(sys.argv) > 1 and sys.argv[1] == '--test-monthly':
         if not EMAIL_ENABLED:
@@ -746,8 +938,8 @@ if __name__ == '__main__':
                 variation -= random.uniform(5, 10)
             
             daily_pv = max(5.0, base_production + variation)
-            daily_load = random.uniform(18, 28)
-            daily_net = daily_load - daily_pv
+            daily_consumption = random.uniform(18, 28)
+            daily_net = daily_consumption - daily_pv
             
             # Add alert to a few days
             alert = ""
@@ -757,14 +949,14 @@ if __name__ == '__main__':
             fake_month_data.append({
                 'Date': date_str,
                 'Daily PV Production (kWh)': f"{daily_pv:.1f}",
-                'Daily Site Load (kWh)': f"{daily_load:.1f}",
+                'Daily Site Consumption (kWh)': f"{daily_consumption:.1f}",
                 'Daily Net Grid (kWh)': f"{daily_net:.1f}",
                 'Alerts': alert
             })
         
         # Build the monthly summary email with fake data
         total_pv = sum(float(row['Daily PV Production (kWh)']) for row in fake_month_data)
-        total_load = sum(float(row['Daily Site Load (kWh)']) for row in fake_month_data)
+        total_consumption = sum(float(row['Daily Site Consumption (kWh)']) for row in fake_month_data)
         total_net = sum(float(row['Daily Net Grid (kWh)']) for row in fake_month_data)
         days_reporting = len(fake_month_data)
         
@@ -806,7 +998,7 @@ if __name__ == '__main__':
             <tr style="background-color: #f0f0f0;">
                 <th>Date</th>
                 <th>PV Production (kWh)</th>
-                <th>Site Load (kWh)</th>
+                <th>Site Consumption (kWh)</th>
                 <th>Net Grid (kWh)</th>
                 <th>Alerts</th>
             </tr>
@@ -820,7 +1012,7 @@ if __name__ == '__main__':
             <tr{alert_style}>
                 <td>{row['Date']}</td>
                 <td>{float(row['Daily PV Production (kWh)']):.1f}</td>
-                <td>{float(row['Daily Site Load (kWh)']):.1f}</td>
+                <td>{float(row['Daily Site Consumption (kWh)']):.1f}</td>
                 <td>{float(row['Daily Net Grid (kWh)']):.1f}</td>
                 <td>{alert_cell}</td>
             </tr>
@@ -846,8 +1038,8 @@ if __name__ == '__main__':
                     <td><strong>{total_pv:.1f} kWh</strong></td>
                 </tr>
                 <tr>
-                    <td>Total Site Load</td>
-                    <td>{total_load:.1f} kWh</td>
+                    <td>Total Site Consumption</td>
+                    <td>{total_consumption:.1f} kWh</td>
                 </tr>
                 <tr>
                     <td>Total Net Grid</td>
