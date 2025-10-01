@@ -1101,3 +1101,4 @@ if __name__ == '__main__':
             sys.exit(1)
     else:
         summary.run(days_ago=1)  # Default: yesterday
+        
