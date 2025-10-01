@@ -18,17 +18,19 @@ SOLAR_INVERTERS_MAP = [[
 "E00123456789",
 "E00123456789"]]
 
-#if you want to save data to google sheets, look at log.md for tips.  It's complicated but free
-GOOGLE_API_CREDENTIALS={"type": "service_account",
-"project_id": "XXXXXX",
-"private_key_id": "XXXXX",
-  "private_key": "-----BEGIN PRIVATE KEY-----\XXXXXXX\n-----END PRIVATE KEY-----\n",
-  "client_email": "XXXXXX",
-  "client_id": "XXXXXX",
-  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-  "token_uri": "https://oauth2.googleapis.com/token",
-  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/XXXXXXX",
-  "universe_domain": "googleapis.com"
-}
-GOOGLE_SHEET_SPREADSHEET_ID="XXXXXXXX"
+#Uncomment and fill this out, if you want to save data to google sheets
+#look at log.md for tips.  It's complicated but free
+
+# GOOGLE_API_CREDENTIALS={"type": "service_account",
+# "project_id": "XXXXXX",
+# "private_key_id": "XXXXX",
+#   "private_key": "-----BEGIN PRIVATE KEY-----\XXXXXXX\n-----END PRIVATE KEY-----\n",
+#   "client_email": "XXXXXX",
+#   "client_id": "XXXXXX",
+#   "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+#   "token_uri": "https://oauth2.googleapis.com/token",
+#   "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+#   "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/XXXXXXX",
+#   "universe_domain": "googleapis.com"
+# }
+# GOOGLE_SHEET_SPREADSHEET_ID="XXXXXXXX"
