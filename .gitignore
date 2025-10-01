@@ -3,6 +3,8 @@ venv/
 config.py
 PVS6_output/*
 !PVS6_output/.gitkeep
+!PVS6_output/raw_JSON_output_files/
+PVS6_output/raw_JSON_output_files/*
 !PVS6_output/raw_JSON_output_files/.gitkeep
 .DS_Store
 cookies.txt
