@@ -70,7 +70,7 @@ class SolarDataCollector:
     def save_json_output(self, pvs6_data):
         """Save raw JSON output to file"""
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        json_file = OUTPUT_DIR / f'PVS6_output_{timestamp}.json'
+        json_file = OUTPUT_DIR / "raw_JSON_output_files" / f'PVS6_output_{timestamp}.json'
         
         try:
             with open(json_file, 'w') as f:
