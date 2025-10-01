@@ -22,37 +22,75 @@ We want to:
 1. Make it available to review trends by non programmers, e.g. a spreadsheet
 1. Send alerts if something goes wrong.
 
-Not looking for a dashboard a person has to watch to look for errors- we all have enough to do!
+**_This is meant to operate in the background. Not a dashboard! We all have enough to do!_**
+
+## Script Actions
+
+There are two scripts, running on the Raspberry Pi on a regular basis
+
+### collect-solar-data.py (every 15 minutes)
+
+1. Query the PVS6 web interface
+1. Save the output as a file on Raspberry Pi
+1. Extract key production metrics, saves to PVS6_output/PVS6_output_overview.csv on Raspberry Pi
+   - Timestamp
+   - Lifetime PV Production (kWh)
+   - Current PV Production (kW)
+   - Current Consumption (kW) Net Power (kW)
+1. Extract key production metrics, saves to PVS6_output/PVS6_output_inverters.csv on Raspberry Pi
+   - Timestamp
+   - Serial Number
+   - Working / Error
+   - Current PV Production (kW)
+   - Lifetime PV Production (kWh)
+
+### daily-solar-summary.py (every morning)
+
+1. Saves daily production, etc as a row to PVS6_output/daily_summary.csv
+1. (optional) save same row to Google sheet via API
+1. (optional) Check for inverter anomalies and email alerts
+1. (optional) Monthly summary email
+
+**_Future ideas_**
+
+- Load a weather API to get temperature and how cloudy it is locally
+- the working/error status from inverters is not fully understood
 
 ### 2025 update to PVS firmware
 
 A recent update to the PVS firmware enables direct requests to the PVS, without a Raspberry Pi going to the ethernet port. This is cool, and a direction for future development. This project is intended to run from the Raspberry Pi, but also works on a laptop in local network.
 
-## Script Actions
+## Script Set up
 
-In these scripts, running on the Raspberry Pi
+1. Basic set up instructions are in rough shape on log.md. (Apologies, I'm tired)
+1. Git pull script / repo on your machine or raspberry pi.
+1. Copy `config.example.py` to `config.py` and edit with your values
+1. Inverter-Status-Quick-Check.py is meant as a quick manual check on the status of the inverters. Meant to be run in a terminal on a local machine or SSH to a raspberry pi
+1. Set up `collect_solar_data.py` program on the regular with crontab
+   1. `crontab -e` edits crontab schedule on raspberry pi
+   1. Add `*/15 6-21 * * * /home/sunpoweradmin/SunPower-PVS6-Supervisor-Supervisor/venv/bin/python /home/sunpoweradmin/SunPower-PVS6-Supervisor-Supervisor/collect-solar-data.py >> /home/sunpoweradmin/SunPower-PVS6-Supervisor-Supervisor/collect-solar-data-crontab.log 2>&1` Run every 15 minutes from 6 AM to 9 PM, saves output to a log file
+   1. `tail -f ~/SunPower-PVS6-Supervisor-Supervisor/collect-solar-data-crontab.log` to watch the log file
+1. Setup `daily-solar-summary.py` to run daily
+   1. `crontab -e` edits crontab schedule on raspberry pi
+   1. `0 6 * * * /home/sunpoweradmin/SunPower-PVS6-Supervisor-Supervisor/venv/bin/python /home/sunpoweradmin/SunPower-PVS6-Supervisor-Supervisor/daily-solar-summary.py >> /home/sunpoweradmin/SunPower-PVS6-Supervisor-Supervisor/daily-solar-summary-crontab.log 2>&1` runs every day
+   1. saves values to a local daily_summary.csv
+1. saving Daily values to a google sheet via API
+   1. check log.md for notes
+1. Emailing yourself monthly reports
+   1. Enable 2-Factor Authentication (if not already enabled):
+      1. Go to https://myaccount.google.com/security
+      1. Under "Signing in to Google", enable "2-Step Verification"
+   1. Create App Password:
+      1. Go to https://myaccount.google.com/apppasswords
+      1. Select "Mail" and "Other (Custom name)"
+      1. Name it "Solar Monitor" or similar
+      1. Click "Generate"
+      1. Copy the 16-character password (remove spaces)
+      1. Save this as SMTP_PASSWORD in config.py
+      1. Never share this password - it gives full access to your Gmail account
+   1. If the script doesn't find an email in the config.py, it doesn't send emails
 
-1. Query the PVS6 web interface
-1. Save the output as a file on Raspberry Pi
-1. Extract key production metrics, save to a CSV file on Raspberry Pi
-   1. in PVS6_output_overview.csv
-      - Timestamp
-      - Lifetime PV Production (kWh)
-      - Current PV Production (kW)
-      - Current Consumption (kW) Net Power (kW)
-   1. in PVS6_output_inverters.csv
-      - Timestamp
-      - Serial Number
-      - Working / Error
-      - Current PV Production (kW)
-      - Lifetime PV Production (kWh)
-1. Load a weather API to get how cloudy it is locally and temperature
-1. Save parsed data to a local CSV file
-1. Submit data to add row to Google sheet via API
-1. Check for anomalies and send alerts
-1. Monthly summary by email
-
-## Gotchas
+### Gotchas
 
 - The inverter(s) send a message approximately every 15 seconds when the microinverter is up and running -- which means when there's sunlight. The microinverters may report an error when there's heavy shading or at night.
 - The PVS6 remembers each microinverter for a while (?) if it is not connected, it will report 'error', not disconnected
@@ -189,28 +227,3 @@ This is not supported when accessing the PVS6 directly, but may still work on th
 The PVS6, when queried, returns JSON formatted data
 [VASERVER example using &fmt=obj](example_data/PVS6_vaserver_output_20250930_115822.json)
 [older DL_CGI example](example_data/PVS6_DL_CGI_output_example.json)
-
-## Detailed Script Description
-
-1. Get script / repo on your machine or raspberry pi. See log.md for tips
-1. Copy `config.example.py` to `config.py` and edit with your values
-1. Inverter-Status-Quick-Check.py is meant as a quick manual check on the status of the inverters. Meant to be run in a terminal on a local machine or SSH to a raspberry pi
-1. Set up `collect_solar_data.py` program on the regular with crontab
-   1. `crontab -e` edits crontab schedule on raspberry pi
-   1. Add `*/15 6-21 * * * /home/sunpoweradmin/SunPower-PVS6-Supervisor-Supervisor/venv/bin/python /home/sunpoweradmin/SunPower-PVS6-Supervisor-Supervisor/collect-solar-data.py >> /home/sunpoweradmin/SunPower-PVS6-Supervisor-Supervisor/collect-solar-data-crontab.log 2>&1` Run every 15 minutes from 6 AM to 9 PM, saves output to a log file
-   1. `tail -f ~/SunPower-PVS6-Supervisor-Supervisor/collect-solar-data-crontab.log` to watch the log file
-1. Setup `SunPower-PVS6-Supervisor-Supervisor.py` to run daily
-   1. `crontab -e` edits crontab schedule on raspberry pi
-1. Emailing yourself using Gmail App-Specific Password
-   1. Enable 2-Factor Authentication (if not already enabled):
-      1. Go to https://myaccount.google.com/security
-      1. Under "Signing in to Google", enable "2-Step Verification"
-   1. Create App Password:
-      1. Go to https://myaccount.google.com/apppasswords
-      1. Select "Mail" and "Other (Custom name)"
-      1. Name it "Solar Monitor" or similar
-      1. Click "Generate"
-      1. Copy the 16-character password (remove spaces)
-      1. Save this as SMTP_PASSWORD in config.py
-      1. Never share this password - it gives full access to your Gmail account
-   1. If the script doesn't find an email, it doesn't send emails
