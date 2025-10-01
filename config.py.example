@@ -1,4 +1,5 @@
-#COPY or rename this file to config.py and put your values in it
+#Copy or rename this file to config.py and put your values in it
+SUPERVISOR_EMAIL ="email@email.com"
 PVS6_IP = "172.27.153.1"  # or 172.27.153.1 for raspberry pi in PVS6 cabinet connected to ethernet port
 # If running on computer on local wifi, replace with the IP address of the PVS6 on your local network.  Will not work outside your local network.
 PVS6_SERIAL_LAST5 = "A1234"
@@ -16,6 +17,8 @@ SOLAR_INVERTERS_MAP = [[
 "E00123456789",
 "E00123456789",
 "E00123456789"]]
+
+#if you want to save data to google sheets, look at log.md for tips.  It's complicated but free
 GOOGLE_API_CREDENTIALS={"type": "service_account",
 "project_id": "XXXXXX",
 "private_key_id": "XXXXX",
