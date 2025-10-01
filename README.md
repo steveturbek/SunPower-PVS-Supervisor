@@ -24,15 +24,26 @@ Not looking for a dashboard a person has to watch to look for errors- we all hav
 
 ### 2025 update to PVS firmware
 
-A recent update to the PVS update enables direct requests to the PVS, without a Raspberry Pi going to the ethernet port. This is cool, and a direction for future development.
+A recent update to the PVS firmware enables direct requests to the PVS, without a Raspberry Pi going to the ethernet port. This is cool, and a direction for future development. This project is intended to run from the Raspberry Pi, but also works on a laptop in local network.
 
 ## Script Actions
 
-In this script, running on the Raspberry Pi
+In these scripts, running on the Raspberry Pi
 
 1. Query the PVS6 web interface
-1. Save the output as a file
-1. Parses the JSON to extract key metrics
+1. Save the output as a file on Raspberry Pi
+1. Extract key production metrics, save to a CSV file on Raspberry Pi
+   1. in PVS6_output_overview.csv
+      - Timestamp
+      - Lifetime PV Production (kWh)
+      - Current PV Production (kW)
+      - Current Consumption (kW) Net Power (kW)
+   1. in PVS6_output_inverters.csv
+      - Timestamp
+      - Serial Number
+      - Working / Error
+      - Current PV Production (kW)
+      - Lifetime PV Production (kWh)
 1. Load a weather API to get how cloudy it is locally and temperature
 1. Save parsed data to a local CSV file
 1. Submit data to add row to Google sheet via API

@@ -178,8 +178,8 @@ class SolarDataCollector:
                         'Timestamp', 
                         'Serial Number', 
                         'State', 
-                        'Power (kW)', 
-                        'Lifetime Energy (kWh)'
+                        'Current PV Production (kW)', 
+                        'Lifetime PV Production (kWh)'
                     ])
                 
                 # Write data rows
