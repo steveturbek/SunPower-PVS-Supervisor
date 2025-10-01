@@ -201,4 +201,16 @@ The PVS6, when queried, returns JSON formatted data
    1. `tail -f ~/SunPower-PVS6-Supervisor-Supervisor/collect-solar-data-crontab.log` to watch the log file
 1. Setup `SunPower-PVS6-Supervisor-Supervisor.py` to run daily
    1. `crontab -e` edits crontab schedule on raspberry pi
-   1. TBD
+1. Emailing yourself using Gmail App-Specific Password
+   1. Enable 2-Factor Authentication (if not already enabled):
+      1. Go to https://myaccount.google.com/security
+      1. Under "Signing in to Google", enable "2-Step Verification"
+   1. Create App Password:
+      1. Go to https://myaccount.google.com/apppasswords
+      1. Select "Mail" and "Other (Custom name)"
+      1. Name it "Solar Monitor" or similar
+      1. Click "Generate"
+      1. Copy the 16-character password (remove spaces)
+      1. Save this as SMTP_PASSWORD in config.py
+      1. Never share this password - it gives full access to your Gmail account
+   1. If the script doesn't find an email, it doesn't send emails

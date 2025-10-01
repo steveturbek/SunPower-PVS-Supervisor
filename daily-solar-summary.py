@@ -5,15 +5,18 @@ Reads previous day's data from CSV files
 calculates daily totals,
 Saves new daily stats to local file
 Writes to Google Sheets if the credentials exist in config.py
-Checks for underperforming inverters, and alers
+Checks for underperforming inverters, and alerts
 Emails monthly summary to admin email defined in config.py
 """
 
 import csv
 import sys
+import smtplib
 from pathlib import Path
 from datetime import datetime, timedelta
 from collections import defaultdict
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
@@ -26,6 +29,25 @@ except (ImportError, AttributeError):
     GOOGLE_SHEETS_ENABLED = False
     GOOGLE_API_CREDENTIALS = None
     GOOGLE_SHEET_SPREADSHEET_ID = None
+
+# Import email config
+try:
+    from config import (
+        SMTP_SERVER, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD,
+        EMAIL_FROM, SUPERVISOR_EMAIL
+    )
+    # Check if any critical email variables are None or empty
+    if all([SMTP_SERVER, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, EMAIL_FROM, SUPERVISOR_EMAIL]):
+        EMAIL_ENABLED = True
+        print("✅ Email alerts enabled")
+    else:
+        EMAIL_ENABLED = False
+        print("Note: Email credentials incomplete, will skip email alerts")
+except (ImportError, AttributeError):
+    print("Note: Email credentials not configured, will skip email alerts")
+    EMAIL_ENABLED = False
+    SMTP_SERVER = SMTP_PORT = SMTP_USERNAME = SMTP_PASSWORD = None
+    EMAIL_FROM = SUPERVISOR_EMAIL = None
 
 # Configuration
 OUTPUT_DIR = Path('PVS6_output')
@@ -158,6 +180,273 @@ class DailySolarSummary:
                 })
         
         return underperformers
+    
+    def send_email(self, subject, html_body, retry=True):
+        """Send email alert - returns True if successful"""
+        if not EMAIL_ENABLED:
+            return False
+        
+        try:
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = subject
+            msg['From'] = EMAIL_FROM
+            msg['To'] = SUPERVISOR_EMAIL
+            
+            # Attach HTML body
+            html_part = MIMEText(html_body, 'html')
+            msg.attach(html_part)
+            
+            # Send email
+            with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+                server.starttls()
+                server.login(SMTP_USERNAME, SMTP_PASSWORD)
+                server.send_message(msg)
+            
+            print(f"✅ Email sent: {subject}")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error sending email: {e}")
+            
+            # Retry once if requested
+            if retry:
+                print("Retrying email send...")
+                return self.send_email(subject, html_body, retry=False)
+            
+            return False
+    
+    def send_underperformance_alert(self, date, underperformers, daily_production):
+        """Send email alert for underperforming inverters"""
+        subject = f"⚠️ Solar Alert: Underperforming Inverters - {date.strftime('%Y-%m-%d')}"
+        
+        # Calculate average
+        avg_production = sum(daily_production.values()) / len(daily_production)
+        
+        # Build HTML email
+        html = f"""
+        <html>
+        <body>
+            <h2>Solar System Alert</h2>
+            <p><strong>Date:</strong> {date.strftime('%Y-%m-%d')}</p>
+            <p><strong>Issue:</strong> {len(underperformers)} inverter(s) producing significantly below average</p>
+            
+            <h3>Underperforming Inverters</h3>
+            <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
+                <tr style="background-color: #f0f0f0;">
+                    <th>Serial Number</th>
+                    <th>Production (kWh)</th>
+                    <th>% of Average</th>
+                </tr>
+        """
+        
+        for u in underperformers:
+            html += f"""
+                <tr>
+                    <td>{u['serial']}</td>
+                    <td>{u['production']:.2f}</td>
+                    <td style="color: red;"><strong>{u['percentage']:.0f}%</strong></td>
+                </tr>
+            """
+        
+        html += f"""
+            </table>
+            
+            <h3>All Inverters (for comparison)</h3>
+            <p><strong>Average production:</strong> {avg_production:.2f} kWh</p>
+            <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
+                <tr style="background-color: #f0f0f0;">
+                    <th>Serial Number</th>
+                    <th>Production (kWh)</th>
+                </tr>
+        """
+        
+        for serial, production in sorted(daily_production.items(), key=lambda x: x[1], reverse=True):
+            html += f"""
+                <tr>
+                    <td>{serial}</td>
+                    <td>{production:.2f}</td>
+                </tr>
+            """
+        
+        html += """
+            </table>
+        </body>
+        </html>
+        """
+        
+        self.send_email(subject, html)
+    
+    def get_monthly_data(self, target_date):
+        """Get all daily data for the month of target_date"""
+        if not DAILY_SUMMARY_CSV.exists():
+            return []
+        
+        month_data = []
+        target_year = target_date.year
+        target_month = target_date.month
+        
+        with open(DAILY_SUMMARY_CSV, 'r') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                date = datetime.strptime(row['Date'], '%Y-%m-%d').date()
+                if date.year == target_year and date.month == target_month:
+                    month_data.append(row)
+        
+        return month_data
+    
+    def get_previous_year_month_data(self, target_date):
+        """Get same month from previous year for YOY comparison"""
+        if not DAILY_SUMMARY_CSV.exists():
+            return []
+        
+        prev_year = target_date.year - 1
+        target_month = target_date.month
+        
+        month_data = []
+        
+        with open(DAILY_SUMMARY_CSV, 'r') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                date = datetime.strptime(row['Date'], '%Y-%m-%d').date()
+                if date.year == prev_year and date.month == target_month:
+                    month_data.append(row)
+        
+        return month_data
+    
+    def send_monthly_summary(self, target_date):
+        """Send monthly summary email on first day of month"""
+        subject = f"☀️ Solar Monthly Summary - {target_date.strftime('%B %Y')}"
+        
+        # Get current month data
+        month_data = self.get_monthly_data(target_date)
+        
+        if not month_data:
+            print("No monthly data available to send")
+            return
+        
+        # Calculate monthly totals
+        total_pv = sum(float(row['Daily PV Production (kWh)']) for row in month_data)
+        total_load = sum(float(row['Daily Site Load (kWh)']) for row in month_data)
+        total_net = sum(float(row['Daily Net Grid (kWh)']) for row in month_data)
+        days_reporting = len(month_data)
+        
+        # Get previous year data for comparison
+        prev_year_data = self.get_previous_year_month_data(target_date)
+        
+        yoy_section = ""
+        if prev_year_data:
+            prev_total_pv = sum(float(row['Daily PV Production (kWh)']) for row in prev_year_data)
+            prev_days = len(prev_year_data)
+            
+            # Calculate percentage change
+            pv_change = ((total_pv - prev_total_pv) / prev_total_pv * 100) if prev_total_pv > 0 else 0
+            change_color = "green" if pv_change >= 0 else "red"
+            change_symbol = "↑" if pv_change >= 0 else "↓"
+            
+            yoy_section = f"""
+            <h3>Year-over-Year Comparison</h3>
+            <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
+                <tr style="background-color: #f0f0f0;">
+                    <th>Metric</th>
+                    <th>{target_date.strftime('%B %Y')}</th>
+                    <th>{target_date.strftime('%B %Y').replace(str(target_date.year), str(target_date.year - 1))}</th>
+                    <th>Change</th>
+                </tr>
+                <tr>
+                    <td>Total Production</td>
+                    <td>{total_pv:.1f} kWh</td>
+                    <td>{prev_total_pv:.1f} kWh</td>
+                    <td style="color: {change_color};"><strong>{change_symbol} {abs(pv_change):.1f}%</strong></td>
+                </tr>
+                <tr>
+                    <td>Days Reporting</td>
+                    <td>{days_reporting}</td>
+                    <td>{prev_days}</td>
+                    <td>-</td>
+                </tr>
+            </table>
+            """
+        else:
+            yoy_section = """
+            <h3>Year-over-Year Comparison</h3>
+            <p><em>No data available for previous year</em></p>
+            """
+        
+        # Build daily data table
+        daily_table = """
+        <h3>Daily Breakdown</h3>
+        <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
+            <tr style="background-color: #f0f0f0;">
+                <th>Date</th>
+                <th>PV Production (kWh)</th>
+                <th>Site Load (kWh)</th>
+                <th>Net Grid (kWh)</th>
+                <th>Alerts</th>
+            </tr>
+        """
+        
+        for row in month_data:
+            alert_cell = row.get('Alerts', '')
+            alert_style = ' style="background-color: #fff3cd;"' if alert_cell else ''
+            
+            daily_table += f"""
+            <tr{alert_style}>
+                <td>{row['Date']}</td>
+                <td>{float(row['Daily PV Production (kWh)']):.1f}</td>
+                <td>{float(row['Daily Site Load (kWh)']):.1f}</td>
+                <td>{float(row['Daily Net Grid (kWh)']):.1f}</td>
+                <td>{alert_cell}</td>
+            </tr>
+            """
+        
+        daily_table += "</table>"
+        
+        # Build complete HTML email
+        html = f"""
+        <html>
+        <body>
+            <h2>Monthly Solar Summary - {target_date.strftime('%B %Y')}</h2>
+            
+            <h3>Month Totals</h3>
+            <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
+                <tr style="background-color: #f0f0f0;">
+                    <th>Metric</th>
+                    <th>Value</th>
+                </tr>
+                <tr>
+                    <td>Total PV Production</td>
+                    <td><strong>{total_pv:.1f} kWh</strong></td>
+                </tr>
+                <tr>
+                    <td>Total Site Load</td>
+                    <td>{total_load:.1f} kWh</td>
+                </tr>
+                <tr>
+                    <td>Total Net Grid</td>
+                    <td>{total_net:.1f} kWh</td>
+                </tr>
+                <tr>
+                    <td>Days Reporting</td>
+                    <td>{days_reporting}</td>
+                </tr>
+                <tr>
+                    <td>Average Daily Production</td>
+                    <td>{total_pv/days_reporting:.1f} kWh</td>
+                </tr>
+            </table>
+            
+            {yoy_section}
+            
+            {daily_table}
+            
+            <p style="margin-top: 20px; color: #666; font-size: 0.9em;">
+                This is an automated monthly summary from your solar monitoring system.
+            </p>
+        </body>
+        </html>
+        """
+        
+        self.send_email(subject, html)
     
     def write_to_google_sheets(self, date, daily_totals, daily_production, underperformers):
         """Write daily summary to Google Sheets"""
@@ -348,6 +637,11 @@ class DailySolarSummary:
             print("⚠️  ALERT: Underperforming inverters detected!")
             for u in underperformers:
                 print(f"  {u['serial']}: {u['production']:.2f} kWh ({u['percentage']:.0f}% of avg {u['average']:.2f} kWh)")
+            
+            # Send email alert
+            if EMAIL_ENABLED:
+                print("\nSending underperformance email alert...")
+                self.send_underperformance_alert(target_date, underperformers, daily_production)
         else:
             print("✅ All inverters performing within expected range")
         
@@ -362,10 +656,233 @@ class DailySolarSummary:
         elif not written:
             print("\nSkipping Google Sheets (duplicate date)")
         
+        # Check if it's the first day of the month
+        if target_date.day == 1 and EMAIL_ENABLED:
+            print("\n📅 First day of month - sending monthly summary...")
+            self.send_monthly_summary(target_date)
+        
         print("\n✅ Daily summary completed!")
 
 if __name__ == '__main__':
     summary = DailySolarSummary()
+    
+    # Check for test email flag
+    if len(sys.argv) > 1 and sys.argv[1] == '--test-email':
+        if not EMAIL_ENABLED:
+            print("❌ Email not configured. Check config.py settings.")
+            sys.exit(1)
+        
+        print("Testing email configuration...")
+        print(f"SMTP Server: {SMTP_SERVER}:{SMTP_PORT}")
+        print(f"From: {EMAIL_FROM}")
+        print(f"To: {SUPERVISOR_EMAIL}")
+        print("\nSending test email...")
+        
+        test_html = """
+        <html>
+        <body>
+            <h2>Solar Monitor - Email Test</h2>
+            <p>This is a test email from your solar monitoring system.</p>
+            <p>If you received this, your email configuration is working correctly!</p>
+            <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
+                <tr style="background-color: #f0f0f0;">
+                    <th>Setting</th>
+                    <th>Value</th>
+                </tr>
+                <tr>
+                    <td>SMTP Server</td>
+                    <td>{}</td>
+                </tr>
+                <tr>
+                    <td>From Address</td>
+                    <td>{}</td>
+                </tr>
+                <tr>
+                    <td>To Address</td>
+                    <td>{}</td>
+                </tr>
+            </table>
+        </body>
+        </html>
+        """.format(f"{SMTP_SERVER}:{SMTP_PORT}", EMAIL_FROM, SUPERVISOR_EMAIL)
+        
+        success = summary.send_email("☀️ Solar Monitor - Test Email", test_html)
+        
+        if success:
+            print("\n✅ Test email sent successfully!")
+            print("Check your inbox (and spam folder).")
+        else:
+            print("\n❌ Failed to send test email.")
+            print("Check your config.py settings and app-specific password.")
+        
+        sys.exit(0)
+    
+    # Check for test monthly email flag
+    if len(sys.argv) > 1 and sys.argv[1] == '--test-monthly':
+        if not EMAIL_ENABLED:
+            print("❌ Email not configured. Check config.py settings.")
+            sys.exit(1)
+        
+        print("Testing monthly summary email with simulated data...")
+        
+        # Generate fake monthly data
+        import random
+        from datetime import date
+        
+        target_date = date.today().replace(day=1)  # First of current month
+        
+        # Create simulated month data
+        fake_month_data = []
+        days_in_month = 30
+        
+        for day in range(1, days_in_month + 1):
+            date_str = f"{target_date.year}-{target_date.month:02d}-{day:02d}"
+            
+            # Simulate varying daily production (15-25 kWh, with some cloudy days)
+            base_production = 20.0
+            variation = random.uniform(-5, 5)
+            # Some days are cloudy
+            if random.random() < 0.2:  # 20% chance of cloudy day
+                variation -= random.uniform(5, 10)
+            
+            daily_pv = max(5.0, base_production + variation)
+            daily_load = random.uniform(18, 28)
+            daily_net = daily_load - daily_pv
+            
+            # Add alert to a few days
+            alert = ""
+            if day in [7, 15, 23]:  # Simulate problems on these days
+                alert = f"⚠️ E00121950007846 ({random.randint(45, 75)}%)"
+            
+            fake_month_data.append({
+                'Date': date_str,
+                'Daily PV Production (kWh)': f"{daily_pv:.1f}",
+                'Daily Site Load (kWh)': f"{daily_load:.1f}",
+                'Daily Net Grid (kWh)': f"{daily_net:.1f}",
+                'Alerts': alert
+            })
+        
+        # Build the monthly summary email with fake data
+        total_pv = sum(float(row['Daily PV Production (kWh)']) for row in fake_month_data)
+        total_load = sum(float(row['Daily Site Load (kWh)']) for row in fake_month_data)
+        total_net = sum(float(row['Daily Net Grid (kWh)']) for row in fake_month_data)
+        days_reporting = len(fake_month_data)
+        
+        # Simulate previous year data
+        prev_total_pv = total_pv * random.uniform(0.85, 1.05)  # +/- 15%
+        prev_days = days_reporting
+        pv_change = ((total_pv - prev_total_pv) / prev_total_pv * 100) if prev_total_pv > 0 else 0
+        change_color = "green" if pv_change >= 0 else "red"
+        change_symbol = "↑" if pv_change >= 0 else "↓"
+        
+        yoy_section = f"""
+        <h3>Year-over-Year Comparison</h3>
+        <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
+            <tr style="background-color: #f0f0f0;">
+                <th>Metric</th>
+                <th>{target_date.strftime('%B %Y')}</th>
+                <th>{target_date.strftime('%B %Y').replace(str(target_date.year), str(target_date.year - 1))}</th>
+                <th>Change</th>
+            </tr>
+            <tr>
+                <td>Total Production</td>
+                <td>{total_pv:.1f} kWh</td>
+                <td>{prev_total_pv:.1f} kWh</td>
+                <td style="color: {change_color};"><strong>{change_symbol} {abs(pv_change):.1f}%</strong></td>
+            </tr>
+            <tr>
+                <td>Days Reporting</td>
+                <td>{days_reporting}</td>
+                <td>{prev_days}</td>
+                <td>-</td>
+            </tr>
+        </table>
+        """
+        
+        # Build daily data table
+        daily_table = """
+        <h3>Daily Breakdown</h3>
+        <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
+            <tr style="background-color: #f0f0f0;">
+                <th>Date</th>
+                <th>PV Production (kWh)</th>
+                <th>Site Load (kWh)</th>
+                <th>Net Grid (kWh)</th>
+                <th>Alerts</th>
+            </tr>
+        """
+        
+        for row in fake_month_data:
+            alert_cell = row.get('Alerts', '')
+            alert_style = ' style="background-color: #fff3cd;"' if alert_cell else ''
+            
+            daily_table += f"""
+            <tr{alert_style}>
+                <td>{row['Date']}</td>
+                <td>{float(row['Daily PV Production (kWh)']):.1f}</td>
+                <td>{float(row['Daily Site Load (kWh)']):.1f}</td>
+                <td>{float(row['Daily Net Grid (kWh)']):.1f}</td>
+                <td>{alert_cell}</td>
+            </tr>
+            """
+        
+        daily_table += "</table>"
+        
+        # Build complete HTML email
+        html = f"""
+        <html>
+        <body>
+            <h2>Monthly Solar Summary - {target_date.strftime('%B %Y')} (TEST DATA)</h2>
+            <p><em style="color: red;">This is a test email with simulated data</em></p>
+            
+            <h3>Month Totals</h3>
+            <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
+                <tr style="background-color: #f0f0f0;">
+                    <th>Metric</th>
+                    <th>Value</th>
+                </tr>
+                <tr>
+                    <td>Total PV Production</td>
+                    <td><strong>{total_pv:.1f} kWh</strong></td>
+                </tr>
+                <tr>
+                    <td>Total Site Load</td>
+                    <td>{total_load:.1f} kWh</td>
+                </tr>
+                <tr>
+                    <td>Total Net Grid</td>
+                    <td>{total_net:.1f} kWh</td>
+                </tr>
+                <tr>
+                    <td>Days Reporting</td>
+                    <td>{days_reporting}</td>
+                </tr>
+                <tr>
+                    <td>Average Daily Production</td>
+                    <td>{total_pv/days_reporting:.1f} kWh</td>
+                </tr>
+            </table>
+            
+            {yoy_section}
+            
+            {daily_table}
+            
+            <p style="margin-top: 20px; color: #666; font-size: 0.9em;">
+                This is an automated monthly summary from your solar monitoring system.
+            </p>
+        </body>
+        </html>
+        """
+        
+        success = summary.send_email(f"☀️ Solar Monthly Summary - {target_date.strftime('%B %Y')} (TEST)", html)
+        
+        if success:
+            print("\n✅ Test monthly email sent successfully!")
+            print("Check your inbox to review the layout and style.")
+        else:
+            print("\n❌ Failed to send test email.")
+        
+        sys.exit(0)
     
     # Check if testing mode (can specify days ago)
     if len(sys.argv) > 1:
@@ -373,7 +890,7 @@ if __name__ == '__main__':
             days_ago = int(sys.argv[1])
             summary.run(days_ago=days_ago)
         except ValueError:
-            print("Usage: python daily-solar-summary.py [days_ago]")
+            print("Usage: python daily-solar-summary.py [days_ago] | --test-email | --test-monthly")
             sys.exit(1)
     else:
         summary.run(days_ago=1)  # Default: yesterday
