@@ -2,7 +2,7 @@
 
 ## 30 Sep 2025
 
-learned new VASERVER technique, published how to to reddit and readme
+learned new VarServer technique, published how to to reddit and readme
 
 ## 15 Sept 2025
 

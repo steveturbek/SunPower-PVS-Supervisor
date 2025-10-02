@@ -103,7 +103,7 @@ A recent update to the PVS firmware enables direct requests to the PVS, without 
 - [ginoledesma/sunpower-pvs-exporter](https://github.com/ginoledesma/sunpower-pvs-exporter/blob/master/sunpower_pvs_notes.md)
 - [Starreveld](https://starreveld.com/PVS6%20Access%20and%20API.pdf)
 - [SunPower Docs and Python Code](https://github.com/SunStrong-Management/pypvs/tree/main)
-- [documentation on VASERVER parameters ](https://github.com/SunStrong-Management/pypvs/blob/main/doc/LocalAPI.md)
+- [documentation on VarServer parameters ](https://github.com/SunStrong-Management/pypvs/blob/main/doc/LocalAPI.md)
 
 also
 
@@ -225,5 +225,5 @@ This is not supported when accessing the PVS6 directly, but may still work on th
 ### Understanding the data output
 
 The PVS6, when queried, returns JSON formatted data
-[VASERVER example using &fmt=obj](example_data/PVS6_vaserver_output_20250930_115822.json)
+[VarServer example using &fmt=obj](example_data/PVS6_varserver_output_20250930_115822.json)
 [older DL_CGI example](example_data/PVS6_DL_CGI_output_example.json)

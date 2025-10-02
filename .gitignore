@@ -9,3 +9,4 @@ PVS6_output/raw_JSON_output_files/*
 .DS_Store
 cookies.txt
 collect-solar-data-crontab.log
+daily-solar-summary-crontab.log

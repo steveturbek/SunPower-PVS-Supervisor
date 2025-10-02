@@ -31,7 +31,7 @@ class SolarDataCollector:
         (OUTPUT_DIR / 'raw_JSON_output_files').mkdir(exist_ok=True)
     
     def fetch_pvs6_data(self):
-        """Fetch data from PVS6 using VASERVER API"""
+        """Fetch data from PVS6 using VarServer API"""
         session = requests.Session()
         
         # Create basic auth header
@@ -217,7 +217,7 @@ class SolarDataCollector:
         
         # Load sample data
         print("Loading sample data file...")
-        sample_file = Path('example_data/PVS6_vaserver_output_20250930_115822.json')
+        sample_file = Path('example_data/PVS6_varserver_output_20250930_115822.json')
         
         if not sample_file.exists():
             print(f"❌ Sample file not found: {sample_file}")
