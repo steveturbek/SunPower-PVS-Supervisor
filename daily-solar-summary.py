@@ -134,7 +134,7 @@ class DailySolarSummary:
             return None
         
         daily_pv = float(last_overview['Lifetime PV Production (kWh)']) - float(first_overview['Lifetime PV Production (kWh)'])
-        daily_consumption = float(last_overview['Lifetime Site Load (kWh)']) - float(first_overview['Lifetime Site Load (kWh)'])
+        daily_consumption = float(last_overview['Lifetime Site Consumption (kWh)']) - float(first_overview['Lifetime Site Consumption (kWh)'])
         daily_net = float(last_overview['Lifetime Net (kWh)']) - float(first_overview['Lifetime Net (kWh)'])
         
         return {
@@ -142,7 +142,7 @@ class DailySolarSummary:
             'daily_consumption_kwh': daily_consumption,
             'daily_net_kwh': daily_net,
             'lifetime_pv_kwh': float(last_overview['Lifetime PV Production (kWh)']),
-            'lifetime_consumption_kwh': float(last_overview['Lifetime Site Load (kWh)']),
+            'lifetime_consumption_kwh': float(last_overview['Lifetime Site Consumption (kWh)']),
             'lifetime_net_kwh': float(last_overview['Lifetime Net (kWh)'])
         }
     
