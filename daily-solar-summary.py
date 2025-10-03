@@ -39,7 +39,7 @@ try:
     # Check if any critical email variables are None or empty
     if all([SMTP_SERVER, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, EMAIL_FROM, SUPERVISOR_EMAIL]):
         EMAIL_ENABLED = True
-        print("✅ Email alerts enabled")
+        print("✓ Email alerts enabled")
     else:
         EMAIL_ENABLED = False
         print("Note: Email credentials incomplete, will skip email alerts")
@@ -70,7 +70,7 @@ class DailySolarSummary:
                 )
                 self.service = build('sheets', 'v4', credentials=creds)
                 self.sheet = self.service.spreadsheets()
-                print("✅ Google Sheets API connected")
+                print("✓ Google Sheets API connected")
             except Exception as e:
                 print(f"⚠️  Error setting up Google Sheets: {e}")
                 print("Will save to local CSV only")
@@ -202,7 +202,7 @@ class DailySolarSummary:
                 server.login(SMTP_USERNAME, SMTP_PASSWORD)
                 server.send_message(msg)
             
-            print(f"✅ Email sent: {subject}")
+            print(f"✓ Email sent: {subject}")
             return True
             
         except Exception as e:
@@ -493,7 +493,7 @@ class DailySolarSummary:
                     valueInputOption='RAW',
                     body={'values': headers}
                 ).execute()
-                print("✅ Created headers in Google Sheets")
+                print("✓ Created headers in Google Sheets")
             
             # Append data row
             result = self.sheet.values().append(
@@ -504,7 +504,7 @@ class DailySolarSummary:
                 body={'values': [row]}
             ).execute()
             
-            print(f"✅ Written to Google Sheets: {date_str}")
+            print(f"✓ Written to Google Sheets: {date_str}")
             
         except Exception as e:
             print(f"❌ Error writing to Google Sheets: {e}")
@@ -576,7 +576,7 @@ class DailySolarSummary:
                     alert_text
                 ])
             
-            print(f"✅ Appended to local CSV: {DAILY_SUMMARY_CSV}")
+            print(f"✓ Appended to local CSV: {DAILY_SUMMARY_CSV}")
             return True
             
         except Exception as e:
@@ -636,7 +636,7 @@ class DailySolarSummary:
                 print("\nSending underperformance email alert...")
                 self.send_underperformance_alert(target_date, underperformers, daily_production)
         else:
-            print("✅ All inverters performing within expected range")
+            print("✓ All inverters performing within expected range")
         
         # Write to local CSV
         print("\nWriting to local CSV...")
@@ -654,7 +654,7 @@ class DailySolarSummary:
             print("\n📅 First day of month - sending monthly summary...")
             self.send_monthly_summary(target_date)
         
-        print("\n✅ Daily summary completed!")
+        print("\n✓ Daily summary completed!")
 
 if __name__ == '__main__':
     summary = DailySolarSummary()
@@ -702,7 +702,7 @@ if __name__ == '__main__':
         success = summary.send_email("☀️ Solar Monitor - Test Email", test_html)
         
         if success:
-            print("\n✅ Test email sent successfully!")
+            print("\n✓ Test email sent successfully!")
             print("Check your inbox (and spam folder).")
         else:
             print("\n❌ Failed to send test email.")
@@ -875,7 +875,7 @@ if __name__ == '__main__':
             )
             
             if success:
-                print("\n✅ Test monthly email sent successfully!")
+                print("\n✓ Test monthly email sent successfully!")
                 print("Check your inbox to review the layout and style with real data.")
             else:
                 print("\n❌ Failed to send test email.")
@@ -1025,7 +1025,7 @@ if __name__ == '__main__':
         )
         
         if success:
-            print("\n✅ Test monthly email sent successfully!")
+            print("\n✓ Test monthly email sent successfully!")
             print("Check your inbox to review the layout and style.")
         else:
             print("\n❌ Failed to send test email.")

@@ -80,7 +80,7 @@ class SolarDataCollector:
         try:
             with open(json_file, 'w') as f:
                 json.dump(pvs6_data, f, indent=2)
-            print(f"✅ Saved JSON to {json_file}")
+            print(f"✓ Saved JSON to {json_file}")
         except Exception as e:
             print(f"❌ Error saving JSON: {e}")
     
@@ -171,7 +171,7 @@ class SolarDataCollector:
                     data['net_power_kw']
                 ])
             
-            print(f"✅ Appended overview to {OVERVIEW_CSV}")
+            print(f"✓ Appended overview to {OVERVIEW_CSV}")
             
         except Exception as e:
             print(f"❌ Error writing overview CSV: {e}")
@@ -206,7 +206,7 @@ class SolarDataCollector:
                         inverter['lifetime_kwh']
                     ])
             
-            print(f"✅ Appended {len(data)} inverter rows to {INVERTERS_CSV}")
+            print(f"✓ Appended {len(data)} inverter rows to {INVERTERS_CSV}")
             
         except Exception as e:
             print(f"❌ Error writing inverters CSV: {e}")
@@ -227,7 +227,7 @@ class SolarDataCollector:
         else:
             with open(sample_file, 'r') as f:
                 pvs6_data = json.load(f)
-            print(f"✅ Loaded sample data from {sample_file}")
+            print(f"✓ Loaded sample data from {sample_file}")
         
         if pvs6_data:
             # Save JSON output
@@ -247,7 +247,7 @@ class SolarDataCollector:
             print(f"Found {len(inverter_data)} inverters")
             self.write_inverters_to_csv(inverter_data)
             
-            print("\n✅ Test completed!")
+            print("\n✓ Test completed!")
         else:
             print("❌ Could not load or fetch PVS6 data")
     
@@ -270,7 +270,7 @@ class SolarDataCollector:
             inverter_data = self.parse_inverter_data(pvs6_data)
             self.write_inverters_to_csv(inverter_data)
             
-            print(f"✅ Collection completed - {len(inverter_data)} inverters, {overview_data['current_pv_kw']:.3f} kW")
+            print(f"✓ Collection completed - {len(inverter_data)} inverters, {overview_data['current_pv_kw']:.3f} kW")
         else:
             print("❌ Could not fetch PVS6 data")
 
