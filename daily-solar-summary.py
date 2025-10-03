@@ -22,13 +22,14 @@ from googleapiclient.discovery import build
 
 # Import config
 try:
-    from config import GOOGLE_API_CREDENTIALS, GOOGLE_SHEET_SPREADSHEET_ID
+    from config import GOOGLE_API_CREDENTIALS, GOOGLE_SHEET_SPREADSHEET_ID, GOOGLE_SHEET_TAB_NAME
     GOOGLE_SHEETS_ENABLED = True
 except (ImportError, AttributeError):
     print("Note: Google Sheets credentials not configured, will save to local CSV only")
     GOOGLE_SHEETS_ENABLED = False
     GOOGLE_API_CREDENTIALS = None
     GOOGLE_SHEET_SPREADSHEET_ID = None
+    GOOGLE_SHEET_TAB_NAME = None
 
 # Import email config
 try:
@@ -54,7 +55,7 @@ OUTPUT_DIR = Path('PVS6_output')
 OVERVIEW_CSV = OUTPUT_DIR / 'PVS6_output_overview.csv'
 INVERTERS_CSV = OUTPUT_DIR / 'PVS6_output_inverters.csv'
 DAILY_SUMMARY_CSV = OUTPUT_DIR / 'daily_summary.csv'
-SHEET_NAME = 'DailySolarSummary'
+
 
 
 try:
@@ -476,7 +477,7 @@ class DailySolarSummary:
             # Check if headers exist
             result = self.sheet.values().get(
                 spreadsheetId=GOOGLE_SHEET_SPREADSHEET_ID,
-                range=f'{SHEET_NAME}!A1:I1'
+                range=f'{GOOGLE_SHEET_TAB_NAME}!A1:I1'
             ).execute()
             
             if not result.get('values'):
@@ -494,7 +495,7 @@ class DailySolarSummary:
                 ]]
                 self.sheet.values().update(
                     spreadsheetId=GOOGLE_SHEET_SPREADSHEET_ID,
-                    range=f'{SHEET_NAME}!A1:I1',
+                    range=f'{GOOGLE_SHEET_TAB_NAME}!A1:I1',
                     valueInputOption='RAW',
                     body={'values': headers}
                 ).execute()
@@ -503,7 +504,7 @@ class DailySolarSummary:
             # Append data row
             result = self.sheet.values().append(
                 spreadsheetId=GOOGLE_SHEET_SPREADSHEET_ID,
-                range=f'{SHEET_NAME}!A:I',
+                range=f'{GOOGLE_SHEET_TAB_NAME}!A:I',
                 valueInputOption='RAW',
                 insertDataOption='INSERT_ROWS',
                 body={'values': [row]}

@@ -16,6 +16,7 @@ PVS6_SERIAL_LAST5 = "A1234"
 # Alert thresholds
 UNDERPERFORMANCE_THRESHOLD = 0.80  # Alert if <80% of average
 
+#not currently using
 SOLAR_INVERTERS_MAP = [[
 "E00123456789",
 "E00123456789",
@@ -47,3 +48,4 @@ SOLAR_INVERTERS_MAP = [[
 #   "universe_domain": "googleapis.com"
 # }
 # GOOGLE_SHEET_SPREADSHEET_ID="XXXXXXXX"
+# GOOGLE_SHEET_TAB_NAME = 'DailySolarSummary'
