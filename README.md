@@ -68,11 +68,11 @@ A recent update to the PVS firmware enables direct requests to the PVS, without 
 1. Inverter-Status-Quick-Check.py is meant as a quick manual check on the status of the inverters. Meant to be run in a terminal on a local machine or SSH to a raspberry pi
 1. Set up `collect_solar_data.py` program on the regular with crontab
    1. `crontab -e` edits crontab schedule on raspberry pi
-   1. Add `*/15 6-21 * * * /home/sunpoweradmin/SunPower-PVS6-Supervisor-Supervisor/venv/bin/python /home/sunpoweradmin/SunPower-PVS6-Supervisor-Supervisor/collect-solar-data.py >> /home/sunpoweradmin/SunPower-PVS6-Supervisor-Supervisor/collect-solar-data-crontab.log 2>&1` Run every 15 minutes from 6 AM to 9 PM, saves output to a log file
+   1. Add `*/15 6-21 * * * cd /home/sunpoweradmin/SunPower-PVS6-Supervisor-Supervisor && /home/sunpoweradmin/SunPower-PVS6-Supervisor-Supervisor/venv/bin/python collect-solar-data.py >> collect-solar-data-crontab.log 2>&1` Run every 15 minutes from 6 AM to 9 PM, saves output to a log file
    1. `tail -f ~/SunPower-PVS6-Supervisor-Supervisor/collect-solar-data-crontab.log` to watch the log file
 1. Setup `daily-solar-summary.py` to run daily
    1. `crontab -e` edits crontab schedule on raspberry pi
-   1. `0 6 * * * /home/sunpoweradmin/SunPower-PVS6-Supervisor-Supervisor/venv/bin/python /home/sunpoweradmin/SunPower-PVS6-Supervisor-Supervisor/daily-solar-summary.py >> /home/sunpoweradmin/SunPower-PVS6-Supervisor-Supervisor/daily-solar-summary-crontab.log 2>&1` runs every day
+   1. `0 6 * * * cd /home/sunpoweradmin/SunPower-PVS6-Supervisor-Supervisor && /home/sunpoweradmin/SunPower-PVS6-Supervisor-Supervisor/venv/bin/python daily-solar-summary.py >> daily-solar-summary-crontab.log 2>&1` runs every day
    1. saves values to a local daily_summary.csv
 1. saving Daily values to a google sheet via API
    1. check log.md for notes
