@@ -153,7 +153,7 @@ class SolarDataCollector:
                     writer.writerow([
                         'Timestamp', 
                         'Lifetime PV Production (kWh)',
-                        'Lifetime Site Load (kWh)',
+                        'Lifetime Site Consumption (kWh)',
                         'Lifetime Net (kWh)',
                         'Current PV Production (kW)', 
                         'Current Consumption (kW)', 
@@ -179,6 +179,7 @@ class SolarDataCollector:
     def write_inverters_to_csv(self, data):
         """Write inverter data to local CSV"""
         # Check if file exists to determine if we need headers
+        
         file_exists = INVERTERS_CSV.exists()
         
         try:
