@@ -16,7 +16,7 @@ Updates
 - `sudo apt update && sudo apt upgrade -y`
 - `sudo apt install python3-pip -y`
 - `sudo apt install git` install git to get this package
-- `cd ~/solar-supervisor-supervisor`
+- `cd ~/SunPower-PVS-Supervisor`
 - `python3 -m venv venv` create virtual environment, otherwise there are later errors
 - `source venv/bin/activate` activate the virtual environment
 - `pip install requests google-api-python-client google-auth-httplib2 google-auth-oauthlib` install google API
@@ -43,14 +43,14 @@ Using my free Gmail account, in [Google Cloud Console](https://console.cloud.goo
 
 Pulling file fom this GitHub repo
 
-- `git clone https://github.com/steveturbek/SunPower-PVS6-Supervisor-Supervisor`
+- `git clone https://github.com/steveturbek/SunPower-PVS-Supervisor.git`
 - `git pull origin main` to update
 
 To run script,
 
 - SSH into Raspberry Pi with account, `ssh sunpoweradmin@123.123.0.123` (get IP address from router if need be)
-- `cd ~/solar-supervisor-supervisor`
+- `cd ~/SunPower-PVS-Supervisor`
 - `python3 -m venv venv` create virtual environment, otherwise there are later errors
 - `source venv/bin/activate` activate the virtual environment
-- **`python ~/SunPower-PVS6-Supervisor-Supervisor/SunPower-PVS6-Supervisor-Supervisor.py` run program!**
+- **`python ~/SunPower-PVS-Supervisor/SunPower-PVS6-Supervisor-Supervisor.py` run program!**
 - `deactivate` turns off virtual enviroment

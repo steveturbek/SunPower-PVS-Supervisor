@@ -1,14 +1,18 @@
-# SunPower PSV6 Supervisor Supervisor
+# SunPower PVS Supervisor
 
-Make a Raspberry Pi + python script to exfiltrate Photovoltaic solar data from unsupported hardware, without paying fees.
+A python script to exfiltrate residential solar electric data from a Sunpower PVS6 monitoring unit, without paying fees. It runs on a Raspberry Pi lugged into the device, or on home network.
 
 ## Background Inspiration
 
-For reference, this project was made for a SunPower PV system installed in 2019. Residential house in the northeast USA with a roof mounted system. 2 circuits, each with 6 Sunpower (actually Maxeon) PV panels & attached Enphase microinverters. No battery.
+For reference, this project was made for a SunPower Photovoltaic (PV) system installed in 2019 on a residential house in the northeast USA with a roof mounted system. The system has 2 circuits, each with 6 Sunpower (actually Maxeon) PV panels & attached Enphase microinverters. No battery.
 
-Sadly, I had a microinverter go bad but did not learn about it until **years later** when another 5 died. I only noticed that half the system was down when our electric bill going up and went 'down the rabbit hole'. Monitoring should NOT be left up to the user! Solar has to be come more friendly or it will not catch on in America. This project is hopefully is a small contribution to that.
+Sadly, I had a microinverter go bad but did not learn about it until **years later** when another 5 died. I only noticed that half the system was down when our electric bill going up and went 'down the rabbit hole' to figure it out.
 
-The SunPower company sold perhaps ~586,000 installations before going backrupt. Luckily the panels and microinverters are under warranty, but the PVS monitoring unit is not. The PVS continues to send data to a server. A company SunStrong is selling app subscription to access the data.
+The SunPower company sold perhaps ~586,000 installations before going backrupt. Luckily the panels and microinverters are under warranty, but the PVS monitoring unit is not. The PVS continues to send data to a server that a new company, SunStrong, sells selling app subscription to access the data.
+
+There are multiple cool dashboard project, see below. This project is meant to keep an eye on it and send an email if something goes wrong. Mostly solar panels just work, which leads to them being ignored, like I did.
+
+IMHO Monitoring should NOT be left up to the user! Solar has to be come more friendly or it will not catch on in America. This project is hopefully is a small contribution to that.
 
 ## Approach
 
@@ -68,11 +72,12 @@ A recent update to the PVS firmware enables direct requests to the PVS, without 
 1. Inverter-Status-Quick-Check.py is meant as a quick manual check on the status of the inverters. Meant to be run in a terminal on a local machine or SSH to a raspberry pi
 1. Set up `collect_solar_data.py` program on the regular with crontab
    1. `crontab -e` edits crontab schedule on raspberry pi
-   1. Add `*/15 6-21 * * * cd /home/sunpoweradmin/SunPower-PVS6-Supervisor-Supervisor && /home/sunpoweradmin/SunPower-PVS6-Supervisor-Supervisor/venv/bin/python collect-solar-data.py >> collect-solar-data-crontab.log 2>&1` Run every 15 minutes from 6 AM to 9 PM, saves output to a log file
-   1. `tail -f ~/SunPower-PVS6-Supervisor-Supervisor/collect-solar-data-crontab.log` to watch the log file
+   1. Add `*/15 6-21 * * * cd /home/sunpoweradmin/SunPower-PVS-Supervisor && /home/sunpoweradmin/SunPower-PVS-Supervisor/venv/bin/python collect-solar-data.py >> collect-solar-data-crontab.log 2>&1` Run every 15 minutes from 6 AM to 9 PM, saves output to a log file
+   1. `tail -f ~/SunPower-PVS-Supervisor/collect-solar-data-crontab.log` to watch the log file
 1. Setup `daily-solar-summary.py` to run daily
    1. `crontab -e` edits crontab schedule on raspberry pi
-   1. `0 6 * * * cd /home/sunpoweradmin/SunPower-PVS6-Supervisor-Supervisor && /home/sunpoweradmin/SunPower-PVS6-Supervisor-Supervisor/venv/bin/python daily-solar-summary.py >> daily-solar-summary-crontab.log 2>&1` runs every day
+   1. `0 6 * * * cd /home/sunpoweradmin/SunPower-PVS-Supervisor && /home/sunpoweradmin/SunPower-PVS-Supervisor/venv/bin/python daily-solar-summary.py >> daily-solar-summary-crontab.log 2>&1` runs every day, saves output to a log file
+   1. `tail -f ~/SunPower-PVS-Supervisor/daily-solar-summary-crontab.log` to watch the log file
    1. saves values to a local daily_summary.csv
 1. saving Daily values to a google sheet via API
    1. check log.md for notes
@@ -89,6 +94,17 @@ A recent update to the PVS firmware enables direct requests to the PVS, without 
       1. Save this as SMTP_PASSWORD in config.py
       1. Never share this password - it gives full access to your Gmail account
    1. If the script doesn't find an email in the config.py, it doesn't send emails
+
+### You can run manually as well
+
+SSH to raspberry pi
+
+1. `cd SunPower-PVS-Supervisor`
+1. `source venv/bin/activate` activate the virtual environment
+1. `python python collect-solar-data.py`
+1. `python daily-solar-summary.py` you do need some data first
+
+This is tested on a macbook, using python3 and a raspberry pi 4b, using python
 
 ### Gotchas
 
