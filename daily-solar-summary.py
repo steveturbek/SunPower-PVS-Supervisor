@@ -55,7 +55,12 @@ OVERVIEW_CSV = OUTPUT_DIR / 'PVS6_output_overview.csv'
 INVERTERS_CSV = OUTPUT_DIR / 'PVS6_output_inverters.csv'
 DAILY_SUMMARY_CSV = OUTPUT_DIR / 'daily_summary.csv'
 SHEET_NAME = 'DailySolarSummary'
-UNDERPERFORMANCE_THRESHOLD = 0.80  # Alert if inverter produces <80% of average
+
+
+try:
+    from config import UNDERPERFORMANCE_THRESHOLD
+except (ImportError, AttributeError):
+    UNDERPERFORMANCE_THRESHOLD = 0.80  # Default fallback
 
 class DailySolarSummary:
     def __init__(self):
