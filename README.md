@@ -101,7 +101,7 @@ SSH to raspberry pi
 
 1. `cd SunPower-PVS-Supervisor`
 1. `source venv/bin/activate` activate the virtual environment
-1. `python python collect-solar-data.py`
+1. `python collect-solar-data.py`
 1. `python daily-solar-summary.py` you do need some data first
 
 This is tested on a macbook, using python3 and a raspberry pi 4b, using python

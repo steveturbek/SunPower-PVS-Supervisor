@@ -80,7 +80,7 @@ class SolarDataCollector:
         try:
             with open(json_file, 'w') as f:
                 json.dump(pvs6_data, f, indent=2)
-            print(f"✓ Saved JSON to {json_file}")
+            print(f"\t✓ Saved JSON to {json_file}")
         except Exception as e:
             print(f"❌ Error saving JSON: {e}")
     
@@ -171,7 +171,7 @@ class SolarDataCollector:
                     data['net_power_kw']
                 ])
             
-            print(f"✓ Appended overview to {OVERVIEW_CSV}")
+            print(f"\t✓ Appended overview to {OVERVIEW_CSV}")
             
         except Exception as e:
             print(f"❌ Error writing overview CSV: {e}")
@@ -206,7 +206,7 @@ class SolarDataCollector:
                         inverter['lifetime_kwh']
                     ])
             
-            print(f"✓ Appended {len(data)} inverter rows to {INVERTERS_CSV}")
+            print(f"\t✓ Appended {len(data)} inverter rows to {INVERTERS_CSV}")
             
         except Exception as e:
             print(f"❌ Error writing inverters CSV: {e}")
@@ -231,11 +231,11 @@ class SolarDataCollector:
         
         if pvs6_data:
             # Save JSON output
-            print("\nSaving JSON output...")
+            print("\n\tSaving JSON output...")
             self.save_json_output(pvs6_data)
             
             # Parse and write overview data
-            print("\nProcessing overview data...")
+            print("\n\tProcessing overview data...")
             overview_data = self.parse_overview_data(pvs6_data)
             print(f"Overview: {overview_data['current_pv_kw']:.3f} kW production")
             print(f"Lifetime: PV={overview_data['lifetime_pv_kwh']:.1f} kWh, Load={overview_data['lifetime_site_load_kwh']:.1f} kWh, Net={overview_data['lifetime_net_kwh']:.1f} kWh")
@@ -254,7 +254,7 @@ class SolarDataCollector:
     def run(self):
         """Run normal data collection"""
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        print(f"Solar Data Collector - {timestamp}")
+        print(f"{timestamp} - Solar Data Collector")
         
         # Fetch PVS6 data
         pvs6_data = self.fetch_pvs6_data()
@@ -270,7 +270,7 @@ class SolarDataCollector:
             inverter_data = self.parse_inverter_data(pvs6_data)
             self.write_inverters_to_csv(inverter_data)
             
-            print(f"✓ Collection completed - {len(inverter_data)} inverters, {overview_data['current_pv_kw']:.3f} kW")
+            print(f"\t✓ Collection completed - {len(inverter_data)} inverters, {overview_data['current_pv_kw']:.3f} kW")
         else:
             print("❌ Could not fetch PVS6 data")
 

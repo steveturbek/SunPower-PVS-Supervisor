@@ -40,12 +40,12 @@ try:
     # Check if any critical email variables are None or empty
     if all([SMTP_SERVER, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, EMAIL_FROM, SUPERVISOR_EMAIL]):
         EMAIL_ENABLED = True
-        print("✓ Email alerts enabled")
+        print("\t✓ Email alerts enabled")
     else:
         EMAIL_ENABLED = False
-        print("Note: Email credentials incomplete, will skip email alerts")
+        print("\tNote: Email credentials incomplete, will skip email alerts")
 except (ImportError, AttributeError):
-    print("Note: Email credentials not configured, will skip email alerts")
+    print("\tNote: Email credentials not configured, will skip email alerts")
     EMAIL_ENABLED = False
     SMTP_SERVER = SMTP_PORT = SMTP_USERNAME = SMTP_PASSWORD = None
     EMAIL_FROM = SUPERVISOR_EMAIL = None
@@ -76,10 +76,10 @@ class DailySolarSummary:
                 )
                 self.service = build('sheets', 'v4', credentials=creds)
                 self.sheet = self.service.spreadsheets()
-                print("✓ Google Sheets API connected")
+                print("\t✓ Google Sheets API connected")
             except Exception as e:
                 print(f"⚠️  Error setting up Google Sheets: {e}")
-                print("Will save to local CSV only")
+                print("\tWill save to local CSV only")
                 self.sheets_enabled = False
                 self.service = None
                 self.sheet = None
@@ -216,7 +216,7 @@ class DailySolarSummary:
             
             # Retry once if requested
             if retry:
-                print("Retrying email send...")
+                print("\tRetrying email send...")
                 return self.send_email(subject, html_body, retry=False)
             
             return False
@@ -324,7 +324,7 @@ class DailySolarSummary:
         
         # Get all monthly data from CSV to find all years with this month
         if not DAILY_SUMMARY_CSV.exists():
-            print("No monthly data available to send")
+            print("\tNo monthly data available to send")
             return
         
         monthly_data_by_year = defaultdict(list)
@@ -341,7 +341,7 @@ class DailySolarSummary:
                     lifetime_pv = float(row['Lifetime PV (kWh)'])
         
         if not monthly_data_by_year:
-            print("No monthly data available to send")
+            print("\tNo monthly data available to send")
             return
         
         # Build lifetime info for subject line
@@ -450,7 +450,7 @@ class DailySolarSummary:
     def write_to_google_sheets(self, date, daily_totals, daily_production, underperformers):
         """Write daily summary to Google Sheets"""
         if not self.sheets_enabled or not self.sheet:
-            print("Google Sheets not available, skipping")
+            print("\tGoogle Sheets not available, skipping")
             return
         
         date_str = date.strftime('%Y-%m-%d')
@@ -499,7 +499,7 @@ class DailySolarSummary:
                     valueInputOption='RAW',
                     body={'values': headers}
                 ).execute()
-                print("✓ Created headers in Google Sheets")
+                print("\t✓ Created headers in Google Sheets")
             
             # Append data row
             result = self.sheet.values().append(
@@ -591,45 +591,45 @@ class DailySolarSummary:
     
     def run(self, days_ago=1):
         """Run daily summary for specified day (default: yesterday)"""
-        print(f"Daily Solar Summary - Processing {days_ago} day(s) ago")
+        print(f"\tDaily Solar Summary - Processing {days_ago} day(s) ago")
         print("="*60)
         
         # Get target date
         start, end, target_date = self.get_date_range(days_ago)
-        print(f"Target date: {target_date}")
+        print(f"\tTarget date: {target_date}")
         
         # Read data from CSVs
-        print("\nReading overview data...")
+        print("\n\tReading overview data...")
         first_overview, last_overview = self.read_overview_for_date(target_date)
         
         if not first_overview or not last_overview:
-            print(f"❌ No overview data found for {target_date}")
+            print(f"\t❌ No overview data found for {target_date}")
             return
         
-        print(f"Found {first_overview['Timestamp']} to {last_overview['Timestamp']}")
+        print(f"\tFound {first_overview['Timestamp']} to {last_overview['Timestamp']}")
         
-        print("\nReading inverter data...")
+        print("\n\tReading inverter data...")
         inverter_data = self.read_inverters_for_date(target_date)
-        print(f"Found data for {len(inverter_data)} inverters")
+        print(f"\tFound data for {len(inverter_data)} inverters")
         
         # Calculate daily totals
-        print("\nCalculating daily totals...")
+        print("\n\rCalculating daily totals...")
         daily_totals = self.calculate_daily_totals(first_overview, last_overview)
         
         if daily_totals:
-            print(f"  Daily PV Production: {daily_totals['daily_pv_kwh']:.2f} kWh")
-            print(f"  Daily Site Consumption: {daily_totals['daily_consumption_kwh']:.2f} kWh")
-            print(f"  Daily Net Grid: {daily_totals['daily_net_kwh']:.2f} kWh")
+            print(f"\t  Daily PV Production: {daily_totals['daily_pv_kwh']:.2f} kWh")
+            print(f"\t  Daily Site Consumption: {daily_totals['daily_consumption_kwh']:.2f} kWh")
+            print(f"\t  Daily Net Grid: {daily_totals['daily_net_kwh']:.2f} kWh")
         
         # Calculate inverter daily production
-        print("\nCalculating per-inverter production...")
+        print("\n\tCalculating per-inverter production...")
         daily_production = self.calculate_inverter_daily_production(inverter_data)
         
         for serial, production in daily_production.items():
             print(f"  {serial}: {production:.2f} kWh")
         
         # Check for underperformers
-        print("\nChecking for underperforming inverters...")
+        print("\n\tChecking for underperforming inverters...")
         underperformers = self.check_underperforming_inverters(daily_production)
         
         if underperformers:
@@ -639,7 +639,7 @@ class DailySolarSummary:
             
             # Send email alert
             if EMAIL_ENABLED:
-                print("\nSending underperformance email alert...")
+                print("\n\tSending underperformance email alert...")
                 self.send_underperformance_alert(target_date, underperformers, daily_production)
         else:
             print("✓ All inverters performing within expected range")
@@ -671,7 +671,7 @@ if __name__ == '__main__':
             print("❌ Email not configured. Check config.py settings.")
             sys.exit(1)
         
-        print("Testing email configuration...")
+        print("\tTesting email configuration...")
         print(f"SMTP Server: {SMTP_SERVER}:{SMTP_PORT}")
         print(f"From: {EMAIL_FROM}")
         print(f"To: {SUPERVISOR_EMAIL}")
@@ -708,10 +708,10 @@ if __name__ == '__main__':
         success = summary.send_email("☀️ Solar Monitor - Test Email", test_html)
         
         if success:
-            print("\n✓ Test email sent successfully!")
+            print("\n\t✓ Test email sent successfully!")
             print("Check your inbox (and spam folder).")
         else:
-            print("\n❌ Failed to send test email.")
+            print("\n\t❌ Failed to send test email.")
             print("Check your config.py settings and app-specific password.")
         
         sys.exit(0)
@@ -881,10 +881,10 @@ if __name__ == '__main__':
             )
             
             if success:
-                print("\n✓ Test monthly email sent successfully!")
+                print("\n\t✓ Test monthly email sent successfully!")
                 print("Check your inbox to review the layout and style with real data.")
             else:
-                print("\n❌ Failed to send test email.")
+                print("\n\t❌ Failed to send test email.")
             
             sys.exit(0)
         else:
@@ -1031,10 +1031,10 @@ if __name__ == '__main__':
         )
         
         if success:
-            print("\n✓ Test monthly email sent successfully!")
+            print("\n\t✓ Test monthly email sent successfully!")
             print("Check your inbox to review the layout and style.")
         else:
-            print("\n❌ Failed to send test email.")
+            print("\n\t❌ Failed to send test email.")
         
         sys.exit(0)
     
