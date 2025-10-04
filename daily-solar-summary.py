@@ -51,9 +51,9 @@ except (ImportError, AttributeError):
     EMAIL_FROM = SUPERVISOR_EMAIL = None
 
 # Configuration
-OUTPUT_DIR = Path('PVS6_output')
-OVERVIEW_CSV = OUTPUT_DIR / 'PVS6_output_overview.csv'
-INVERTERS_CSV = OUTPUT_DIR / 'PVS6_output_inverters.csv'
+OUTPUT_DIR = Path('output')
+OVERVIEW_CSV = OUTPUT_DIR / 'overview.csv'
+INVERTERS_CSV = OUTPUT_DIR / 'inverters.csv'
 DAILY_SUMMARY_CSV = OUTPUT_DIR / 'daily_summary.csv'
 
 

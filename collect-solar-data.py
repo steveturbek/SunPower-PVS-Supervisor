@@ -20,9 +20,9 @@ except ImportError:
     sys.exit(1)
 
 # Configuration
-OUTPUT_DIR = Path('PVS6_output')
-OVERVIEW_CSV = OUTPUT_DIR / 'PVS6_output_overview.csv'
-INVERTERS_CSV = OUTPUT_DIR / 'PVS6_output_inverters.csv'
+OUTPUT_DIR = Path('output')
+OVERVIEW_CSV = OUTPUT_DIR / 'overview.csv'
+INVERTERS_CSV = OUTPUT_DIR / 'inverters.csv'
 
 class SolarDataCollector:
     def __init__(self):
