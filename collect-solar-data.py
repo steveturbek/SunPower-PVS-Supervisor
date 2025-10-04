@@ -14,15 +14,10 @@ from datetime import datetime
 
 # Import config
 try:
-    from config import PVS6_IP, PVS6_SERIAL_LAST5
+    from config import PVS6_IP, PVS6_SERIAL_LAST5, OUTPUT_DIR, OVERVIEW_CSV, INVERTERS_CSV
 except ImportError:
     print("Error: config.py not found. Copy config.py.example to config.py and add your values.")
     sys.exit(1)
-
-# Configuration
-OUTPUT_DIR = Path('output')
-OVERVIEW_CSV = OUTPUT_DIR / 'overview.csv'
-INVERTERS_CSV = OUTPUT_DIR / 'inverters.csv'
 
 class SolarDataCollector:
     def __init__(self):

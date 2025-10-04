@@ -50,11 +50,15 @@ except (ImportError, AttributeError):
     SMTP_SERVER = SMTP_PORT = SMTP_USERNAME = SMTP_PASSWORD = None
     EMAIL_FROM = SUPERVISOR_EMAIL = None
 
-# Configuration
-OUTPUT_DIR = Path('output')
-OVERVIEW_CSV = OUTPUT_DIR / 'overview.csv'
-INVERTERS_CSV = OUTPUT_DIR / 'inverters.csv'
-DAILY_SUMMARY_CSV = OUTPUT_DIR / 'daily_summary.csv'
+# Import file paths from config
+try:
+    from config import OUTPUT_DIR, OVERVIEW_CSV, INVERTERS_CSV, DAILY_SUMMARY_CSV
+except (ImportError, AttributeError):
+    # Fallback to defaults if not in config
+    OUTPUT_DIR = Path('output')
+    OVERVIEW_CSV = OUTPUT_DIR / 'overview.csv'
+    INVERTERS_CSV = OUTPUT_DIR / 'inverters.csv'
+    DAILY_SUMMARY_CSV = OUTPUT_DIR / 'daily_summary.csv'
 
 
 
