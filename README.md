@@ -71,12 +71,14 @@ This guide walks you through setting up the monitoring system on a Raspberry Pi 
 ### Step 1: Raspberry Pi Hardware Setup (One-time)
 
 **Hardware needed:**
+
 - Raspberry Pi 4B (or similar)
 - 32 GB SD card
 - Ethernet cable
 - USB cable for power
 
 **Initial Pi setup:**
+
 1. Install Raspberry Pi OS Lite 64-bit on SD card
 2. Create account with password, enable SSH, configure WiFi
 3. Update the system:
@@ -101,11 +103,13 @@ This guide walks you through setting up the monitoring system on a Raspberry Pi 
 ### Step 2: Install the Code (on Raspberry Pi)
 
 SSH into your Raspberry Pi from your computer:
+
 ```bash
 ssh your_username@192.168.x.x
 ```
 
 Clone this repository:
+
 ```bash
 cd ~
 git clone https://github.com/steveturbek/SunPower-PVS-Supervisor.git
@@ -113,12 +117,14 @@ cd SunPower-PVS-Supervisor
 ```
 
 Create and activate Python virtual environment:
+
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
 
 Install required Python packages:
+
 ```bash
 pip install -r requirements.txt
 ```
@@ -126,16 +132,19 @@ pip install -r requirements.txt
 ### Step 3: Configure Your Settings (on Raspberry Pi)
 
 Create your config file:
+
 ```bash
 cp config.py.example config.py
 nano config.py
 ```
 
 **Required settings** (basic monitoring, no emails or Google Sheets):
+
 - `PVS6_IP` - IP address of your PVS6 (use `172.27.153.1` if accessing via ethernet)
 - `PVS6_SERIAL_LAST5` - Last 5 characters of PVS6 serial number (found inside PVS6 cover)
 
 **Optional: Google Sheets integration** (skip if you only want local CSV files):
+
 1. Go to [Google Cloud Console](https://console.cloud.google.com)
 2. Create a new project (e.g., "SunPower-Monitor")
 3. Enable the Google Sheets API
@@ -147,6 +156,7 @@ nano config.py
 9. Share your Google Sheet with the service account email (found in JSON file)
 
 **Optional: Email alerts** (skip if you don't want email notifications):
+
 1. Enable 2-Factor Authentication on your Gmail account:
    - Go to https://myaccount.google.com/security
    - Enable "2-Step Verification"
@@ -166,22 +176,26 @@ nano config.py
 ### Step 4: Test It Works (on Raspberry Pi)
 
 Make sure you're in the virtual environment:
+
 ```bash
 cd ~/SunPower-PVS-Supervisor
 source venv/bin/activate
 ```
 
 Test data collection (should create CSV files in `output/` folder):
+
 ```bash
 python3 collect-solar-data.py
 ```
 
 Test daily summary (needs data from previous step):
+
 ```bash
 python3 daily-solar-summary.py
 ```
 
 Quick check inverter status (manual diagnostic tool):
+
 ```bash
 python3 Inverter-Status-Quick-Check.py
 ```
@@ -189,11 +203,13 @@ python3 Inverter-Status-Quick-Check.py
 ### Step 5: Automate with Cron (on Raspberry Pi)
 
 Set up automated data collection every 15 minutes:
+
 ```bash
 crontab -e
 ```
 
 Add these two lines:
+
 ```bash
 # Collect data every 15 minutes, 6 AM to 9 PM
 */15 6-21 * * * cd /home/YOUR_USERNAME/SunPower-PVS-Supervisor && /home/YOUR_USERNAME/SunPower-PVS-Supervisor/venv/bin/python collect-solar-data.py >> collect-solar-data-crontab.log 2>&1
@@ -205,6 +221,7 @@ Add these two lines:
 Replace `YOUR_USERNAME` with your actual username.
 
 Watch the logs to confirm it's working:
+
 ```bash
 tail -f ~/SunPower-PVS-Supervisor/collect-solar-data-crontab.log
 tail -f ~/SunPower-PVS-Supervisor/daily-solar-summary-crontab.log
@@ -213,6 +230,7 @@ tail -f ~/SunPower-PVS-Supervisor/daily-solar-summary-crontab.log
 ### Step 6: Updating the Code (on Raspberry Pi)
 
 When updates are available:
+
 ```bash
 cd ~/SunPower-PVS-Supervisor
 git pull
@@ -236,19 +254,15 @@ The scripts also work on macOS if you prefer not to use a Raspberry Pi:
 ### What Gets Created
 
 After setup, you'll have these files in the `output/` directory:
+
 - `overview.csv` - System-level production/consumption every 15 minutes
 - `inverters.csv` - Individual inverter data every 15 minutes
 - `daily_summary.csv` - Daily totals and alerts
 - `raw_JSON_output_files/` - Raw PVS6 responses (for debugging)
 
-### Gotchas
-
-- The inverter(s) send a message approximately every 15 seconds when the microinverter is up and running -- which means when there's sunlight. The microinverters may report an error when there's heavy shading or at night.
-- The PVS6 remembers each microinverter for a while (?) if it is not connected, it will report 'error', not disconnected
-
 ## References
 
-**_I am indebted to other projects that inspired and informed this project. I hope I can pay it back to help others._**
+**Here are some cool projects that inspired and informed this project. I hope I can pay it back to help others.**
 
 - [Gruby](https://blog.gruby.com/2020/04/28/monitoring-a-sunpower-solar-system/)
 - [ginoledesma/sunpower-pvs-exporter](https://github.com/ginoledesma/sunpower-pvs-exporter/blob/master/sunpower_pvs_notes.md)
@@ -258,6 +272,7 @@ After setup, you'll have these files in the `output/` directory:
 
 also
 
+- [SunPower Solar Integration to Home Assistant (a smart home dashboard)](https://community.home-assistant.io/t/options-for-sunpower-solar-integration/289621/6)
 - [https://github.com/krbaker/hass-sunpower](https://github.com/krbaker/hass-sunpower)
 - [https://github.com/jrconlin/sunpower_hass/tree/main/direct](https://github.com/jrconlin/sunpower_hass/tree/main/direct)
 - [PVS5-6_Reverse_Proxy_Guide](https://github.com/MrStrabo/PVS5-6_Reverse_Proxy_Guide)
@@ -279,7 +294,10 @@ PVS6 were manufactured and sold in the US by SunPower, which unfotunately went o
 
 The PVS6 does NOT talk to your electrical grid. These are all estimates, but said to be faily accurrate.
 
-### How to ask for the data, nicely
+- **The PVS6 remembers microinverters for a period after disconnect (will show 'error' not 'disconnected')**. You can ask your solar installer or SunStrong to forget the device.
+- **If a microinverter is moved to a different solar circuit, the PVS6 doesn't notice**
+
+## How to ask for the data, nicely
 
 Tips on accessing the PVS6, from either a raspberry pi, or local mac
 Building on tips on the [2025 way to access the PVS6](https://www.reddit.com/r/SunPower/comments/1lh7x90/the_agony_and_the_ecstasy_of_varserver_and_dl_cgi/) and [SunStrong code library example page](https://github.com/SunStrong-Management/pypvs/blob/main/doc/LocalAPI.md)
