@@ -572,9 +572,9 @@ class DailySolarSummary:
                 # Write data row
                 writer.writerow([
                     date_str,
-                    daily_totals['daily_pv_kwh'],
-                    daily_totals['daily_consumption_kwh'],
-                    daily_totals['daily_net_kwh'],
+                    round(daily_totals['daily_pv_kwh'], 1),
+                    round(daily_totals['daily_consumption_kwh'], 1),
+                    round(daily_totals['daily_net_kwh'], 1),
                     daily_totals['lifetime_pv_kwh'],
                     daily_totals['lifetime_consumption_kwh'],
                     daily_totals['lifetime_net_kwh'],
@@ -663,6 +663,12 @@ class DailySolarSummary:
         print("\n✓ Daily summary completed!")
 
 if __name__ == '__main__':
+    # Check if running in virtual environment
+    if sys.prefix == sys.base_prefix:
+        print("⚠️  WARNING: Not running in virtual environment!")
+        print("   Run: source venv/bin/activate")
+        print()
+
     summary = DailySolarSummary()
     
     # Check for test email flag
