@@ -125,6 +125,7 @@ class DailySolarSummary:
             return {}
 
         inverter_data = defaultdict(lambda: {'first': None, 'last': None})
+        skipped_test_entries = 0
 
         with open(INVERTERS_CSV, 'r') as f:
             reader = csv.DictReader(f)
@@ -134,10 +135,14 @@ class DailySolarSummary:
                     serial = row['Serial Number']
                     # Skip test data (serial numbers with repeating patterns like E00123456789)
                     if serial == 'E00123456789':
+                        skipped_test_entries += 1
                         continue
                     if inverter_data[serial]['first'] is None:
                         inverter_data[serial]['first'] = row
                     inverter_data[serial]['last'] = row
+
+        if skipped_test_entries > 0:
+            print(f"\t⏭️  Skipped {skipped_test_entries} test data entries (E00123456789)")
 
         return dict(inverter_data)
     
