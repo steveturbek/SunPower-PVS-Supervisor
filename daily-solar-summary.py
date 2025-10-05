@@ -123,19 +123,22 @@ class DailySolarSummary:
         if not INVERTERS_CSV.exists():
             print(f"Error: {INVERTERS_CSV} not found")
             return {}
-        
+
         inverter_data = defaultdict(lambda: {'first': None, 'last': None})
-        
+
         with open(INVERTERS_CSV, 'r') as f:
             reader = csv.DictReader(f)
             for row in reader:
                 timestamp = datetime.strptime(row['Timestamp'], '%Y-%m-%d %H:%M:%S')
                 if timestamp.date() == target_date:
                     serial = row['Serial Number']
+                    # Skip test data (serial numbers with repeating patterns like E00123456789)
+                    if serial == 'E00123456789':
+                        continue
                     if inverter_data[serial]['first'] is None:
                         inverter_data[serial]['first'] = row
                     inverter_data[serial]['last'] = row
-        
+
         return dict(inverter_data)
     
     def calculate_daily_totals(self, first_overview, last_overview):
