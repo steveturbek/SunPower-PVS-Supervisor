@@ -332,7 +332,14 @@ class DailySolarSummary:
         return month_data
     
     def send_monthly_summary(self, target_date):
-        """Send monthly summary email on first day of month"""
+        """Send monthly summary email for the specified month
+
+        Args:
+            target_date: A date in the month to summarize (typically the previous month)
+
+        This function is called on the first day of a new month to summarize
+        the PREVIOUS month's data.
+        """
         
         # Get all monthly data from CSV to find all years with this month
         if not DAILY_SUMMARY_CSV.exists():
@@ -667,9 +674,12 @@ class DailySolarSummary:
         elif not written:
             print("\nSkipping Google Sheets (duplicate date)")
         
-        # Check if it's the first day of the month
-        if target_date.day == 1 and EMAIL_ENABLED:
-            print("\n📅 First day of month - sending monthly summary...")
+        # Check if we just finished the last day of a month
+        # Example: Script runs Nov 1 at 3am, processing Oct 31 data (target_date)
+        # If target_date + 1 day = 1st of new month, send the completed month's summary
+        tomorrow = target_date + timedelta(days=1)
+        if tomorrow.day == 1 and EMAIL_ENABLED:
+            print(f"\n📅 Last day of month ({target_date}) - sending monthly summary for {target_date.strftime('%B %Y')}...")
             self.send_monthly_summary(target_date)
         
         print("\n✓ Daily summary completed!")
