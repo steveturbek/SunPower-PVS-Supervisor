@@ -269,6 +269,7 @@ After setup, you'll have these files in the `output/` directory:
 - [Starreveld](https://starreveld.com/PVS6%20Access%20and%20API.pdf)
 - [SunPower Docs and Python Code](https://github.com/SunStrong-Management/pypvs/tree/main)
 - [documentation on VarServer parameters ](https://github.com/SunStrong-Management/pypvs/blob/main/doc/LocalAPI.md)
+- [PVS6 VarServer parameters ](https://github.com/SunStrong-Management/pypvs/blob/main/doc/varserver-variables-public-pvs6.csv)
 
 also
 
