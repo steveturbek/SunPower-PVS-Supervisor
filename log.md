@@ -1,9 +1,16 @@
 # Project Log, in reverse chronological order
 
-## 18 Nov 2025
+## 19 Nov 2025
 
 - [kind feedback from @rbgirshick](https://github.com/steveturbek/SunPower-PVS-Supervisor/issues/1)
+- updated collect-solar-data.py to consistencize column header
+- added definitions to docs in readme
+- updated daily solar summary to fix time of day issue, which was missing nightime power consumption and messing up metrics
+
+## 18 Nov 2025
+
 - Issue accessing raspberry pi via SSH. A reboot fixed it.
+- Added Wifi power management below to try and prevent it from sleeping
 
 **Problem:** SSH timeouts after long uptime, ping works, reboot fixes it
 
