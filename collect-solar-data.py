@@ -149,7 +149,7 @@ class SolarDataCollector:
                         'Timestamp', 
                         'Lifetime PV Production (kWh)',
                         'Lifetime Site Consumption (kWh)',
-                        'Lifetime Net (kWh)',
+                        'Lifetime Net Grid (kWh)',
                         'Current PV Production (kW)', 
                         'Current Consumption (kW)', 
                         'Current Net Power (kW)'

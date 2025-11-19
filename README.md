@@ -37,16 +37,22 @@ There are two scripts, running on the Raspberry Pi on a regular basis. It also w
 1. Query the PVS6 web interface
 1. Save the output as a file on Raspberry Pi
 1. Extract key production metrics, saves to output/overview.csv on Raspberry Pi
+
    - Timestamp
-   - Lifetime PV Production (kWh)
-   - Current PV Production (kW)
-   - Current Consumption (kW) Net Power (kW)
+   - Lifetime PV Production (kWh) `/sys/livedata/pv_en`
+   - Lifetime Site Load (kWh) `/sys/livedata/site_load_en`
+   - Lifetime Net (kWh) `/sys/livedata/net_en`
+   - Current PV Production (kW) `/sys/livedata/pv_p`
+   - Current Consumption (kW) `/sys/livedata/site_load_p`
+   - Current Net Power (kW) `/sys/livedata/net_p`
+
 1. Extract key production metrics, saves to output/inverters.csv on Raspberry Pi
+
    - Timestamp
    - Serial Number
    - Working / Error
-   - Current PV Production (kW)
-   - Lifetime PV Production (kWh)
+   - Current PV Production (kW) `/sys/devices/inverter/{inverter_index}/p3phsumKw`
+   - Lifetime PV Production (kWh) `/sys/devices/inverter/{inverter_index}/ltea3phsumKwh`
 
 ### daily-solar-summary.py (every morning)
 
