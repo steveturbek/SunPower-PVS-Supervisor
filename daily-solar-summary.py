@@ -153,7 +153,7 @@ class DailySolarSummary:
         
         daily_pv = float(last_overview['Lifetime PV Production (kWh)']) - float(first_overview['Lifetime PV Production (kWh)'])
         daily_consumption = float(last_overview['Lifetime Site Consumption (kWh)']) - float(first_overview['Lifetime Site Consumption (kWh)'])
-        daily_net = float(last_overview['Lifetime Net (kWh)']) - float(first_overview['Lifetime Net (kWh)'])
+        daily_net = float(last_overview['Lifetime Net Grid (kWh)']) - float(first_overview['Lifetime Net Grid (kWh)'])
         
         return {
             'daily_pv_kwh': daily_pv,
@@ -161,7 +161,7 @@ class DailySolarSummary:
             'daily_net_kwh': daily_net,
             'lifetime_pv_kwh': float(last_overview['Lifetime PV Production (kWh)']),
             'lifetime_consumption_kwh': float(last_overview['Lifetime Site Consumption (kWh)']),
-            'lifetime_net_kwh': float(last_overview['Lifetime Net (kWh)'])
+            'lifetime_net_kwh': float(last_overview['Lifetime Net Grid (kWh)'])
         }
     
     def calculate_inverter_daily_production(self, inverter_data):
@@ -508,7 +508,7 @@ class DailySolarSummary:
                     'Daily Net Grid (kWh)',
                     'Lifetime PV (kWh)',
                     'Lifetime Site Consumption (kWh)',
-                    'Lifetime Net (kWh)',
+                    'Lifetime Net Grid (kWh)',
                     'Inverters Reporting',
                     'Alerts'
                 ]]
@@ -583,7 +583,7 @@ class DailySolarSummary:
                         'Daily Net Grid (kWh)',
                         'Lifetime PV (kWh)',
                         'Lifetime Site Consumption (kWh)',
-                        'Lifetime Net (kWh)',
+                        'Lifetime Net Grid (kWh)',
                         'Inverters Reporting',
                         'Alerts'
                     ])
@@ -591,12 +591,12 @@ class DailySolarSummary:
                 # Write data row
                 writer.writerow([
                     date_str,
-                    round(daily_totals['daily_pv_kwh'], 1),
-                    round(daily_totals['daily_consumption_kwh'], 1),
-                    round(daily_totals['daily_net_kwh'], 1),
-                    daily_totals['lifetime_pv_kwh'],
-                    daily_totals['lifetime_consumption_kwh'],
-                    daily_totals['lifetime_net_kwh'],
+                    round(daily_totals['daily_pv_kwh'], 2),
+                    round(daily_totals['daily_consumption_kwh'], 2),
+                    round(daily_totals['daily_net_kwh'], 2),
+                    round(daily_totals['lifetime_pv_kwh'], 2),
+                    round(daily_totals['lifetime_consumption_kwh'], 2),
+                    round(daily_totals['lifetime_net_kwh'], 2),
                     len(daily_production),
                     alert_text
                 ])
@@ -618,22 +618,34 @@ class DailySolarSummary:
         print(f"\tTarget date: {target_date}")
         
         # Read data from CSVs
+        # Use first entry of target_date to first entry of next day for full 24-hour calculation
         print("\n\tReading overview data...")
-        first_overview, last_overview = self.read_overview_for_date(target_date)
-        
-        if not first_overview or not last_overview:
+        next_date = target_date + timedelta(days=1)
+
+        first_overview_yesterday, _ = self.read_overview_for_date(target_date)
+        first_overview_today, _ = self.read_overview_for_date(next_date)
+
+        if not first_overview_yesterday:
             print(f"\t❌ No overview data found for {target_date}")
             return
-        
-        print(f"\tFound {first_overview['Timestamp']} to {last_overview['Timestamp']}")
+
+        if not first_overview_today:
+            # Fall back to last entry of target_date if no data for today yet
+            print(f"\t⚠️  No data yet for {next_date}, using last entry of {target_date}")
+            _, first_overview_today = self.read_overview_for_date(target_date)
+            if not first_overview_today:
+                print(f"\t❌ No overview data found for {target_date}")
+                return
+
+        print(f"\t24-hour period: {first_overview_yesterday['Timestamp']} to {first_overview_today['Timestamp']}")
         
         print("\n\tReading inverter data...")
         inverter_data = self.read_inverters_for_date(target_date)
         print(f"\tFound data for {len(inverter_data)} inverters")
         
         # Calculate daily totals
-        print("\n\rCalculating daily totals...")
-        daily_totals = self.calculate_daily_totals(first_overview, last_overview)
+        print("\n\tCalculating daily totals...")
+        daily_totals = self.calculate_daily_totals(first_overview_yesterday, first_overview_today)
         
         if daily_totals:
             print(f"\t  Daily PV Production: {daily_totals['daily_pv_kwh']:.2f} kWh")

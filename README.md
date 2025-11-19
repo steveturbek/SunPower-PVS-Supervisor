@@ -41,7 +41,7 @@ There are two scripts, running on the Raspberry Pi on a regular basis. It also w
    - Timestamp
    - Lifetime PV Production (kWh) `/sys/livedata/pv_en`
    - Lifetime Site Load (kWh) `/sys/livedata/site_load_en`
-   - Lifetime Net (kWh) `/sys/livedata/net_en`
+   - Lifetime Net Grid (kWh) `/sys/livedata/net_en`
    - Current PV Production (kW) `/sys/livedata/pv_p`
    - Current Consumption (kW) `/sys/livedata/site_load_p`
    - Current Net Power (kW) `/sys/livedata/net_p`
@@ -54,9 +54,21 @@ There are two scripts, running on the Raspberry Pi on a regular basis. It also w
    - Current PV Production (kW) `/sys/devices/inverter/{inverter_index}/p3phsumKw`
    - Lifetime PV Production (kWh) `/sys/devices/inverter/{inverter_index}/ltea3phsumKwh`
 
-### daily-solar-summary.py (every morning)
+### daily-solar-summary.py (runs once every morning)
 
+1. Reads previous day's data from `overview.csv` and `inverters.cvs` files and calculates daily totals
 1. Saves daily production, etc as a row to output/daily_summary.csv
+
+   - Timestamp
+   - Daily PV Production (kWh) 24 hour difference of `/sys/livedata/pv_en`
+   - Daily Site Consumption (kWh) 24 hour difference of `/sys/livedata/site_load_en`
+   - Daily Net Grid (kWh) 24 hour difference of `/sys/livedata/net_en`
+   - Lifetime PV Production (kWh) `/sys/livedata/pv_en`
+   - Lifetime Site Load (kWh) `/sys/livedata/site_load_en`
+   - Lifetime Net Grid (kWh) `/sys/livedata/net_en`
+   - Inverters Reporting
+   - Alerts
+
 1. (optional) save same row to Google sheet via API
 1. (optional) Check for inverter anomalies and email alerts
 1. (optional) Monthly summary email
@@ -200,6 +212,22 @@ Test daily summary (needs data from previous step):
 python3 daily-solar-summary.py
 ```
 
+One can run it for previous days, for example 3 days ago
+
+```bash
+python3 daily-solar-summary.py 3
+```
+
+NOTE: it won't overwrite the daily-solar-summary.py, so move or rename file to get new output
+
+E.G. To do the last 47 days
+
+```bash
+for i in {47..1}; do
+  python daily-solar-summary.py $i
+done
+```
+
 Quick check inverter status (manual diagnostic tool):
 
 ```bash
@@ -220,8 +248,8 @@ Add these two lines:
 # Collect data every 15 minutes, 6 AM to 9 PM
 */15 6-21 * * * cd /home/YOUR_USERNAME/SunPower-PVS-Supervisor && /home/YOUR_USERNAME/SunPower-PVS-Supervisor/venv/bin/python collect-solar-data.py >> collect-solar-data-crontab.log 2>&1
 
-# Daily summary at 6 AM
-0 6 * * * cd /home/YOUR_USERNAME/SunPower-PVS-Supervisor && /home/YOUR_USERNAME/SunPower-PVS-Supervisor/venv/bin/python daily-solar-summary.py >> daily-solar-summary-crontab.log 2>&1
+# Daily summary at 7 AM, hopefully after first collect-solar-data.py job runs
+0 7 * * * cd /home/YOUR_USERNAME/SunPower-PVS-Supervisor && /home/YOUR_USERNAME/SunPower-PVS-Supervisor/venv/bin/python daily-solar-summary.py >> daily-solar-summary-crontab.log 2>&1
 ```
 
 Replace `YOUR_USERNAME` with your actual username.
@@ -402,4 +430,4 @@ This is not supported when accessing the PVS6 directly, but may still work on th
 
 The PVS6, when queried, returns JSON formatted data
 [VarServer example using &fmt=obj](example_data/PVS6_varserver_output_20250930_115822.json)
-[older DL_CGI example](example_data/PVS6_DL_CGI_output_example.json)
+and [older DL_CGI example](example_data/PVS6_DL_CGI_output_example.json)
