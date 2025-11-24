@@ -1,6 +1,6 @@
 # SunPower PVS Supervisor
 
-A python script to exfiltrate residential solar electric data from a Sunpower PVS6 monitoring unit, without paying fees. It runs on a Raspberry Pi lugged into the device, or on home network.
+A python script to exfiltrate residential solar electric data from a Sunpower PVS6 monitoring unit, without paying fees. It runs on a Raspberry Pi plugged into the device, or on home network.
 
 ## Background Inspiration
 
