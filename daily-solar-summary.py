@@ -391,11 +391,11 @@ class DailySolarSummary:
             days_reporting = len(year_data)
             avg_daily = (total_pv / days_reporting) if days_reporting > 0 else 0
             
-            # Format values, show ? for zero values
+            # Format values, show ? if no data (net can be negative when exporting)
             avg_daily_str = f"{avg_daily:.1f}" if avg_daily > 0 else "?"
             total_pv_str = f"{total_pv:.1f}" if total_pv > 0 else "?"
             total_consumption_str = f"{total_consumption:.1f}" if total_consumption > 0 else "?"
-            total_net_str = f"{total_net:.1f}" if total_net > 0 else "?"
+            total_net_str = f"{total_net:.1f}" if total_pv > 0 else "?"
             
             yoy_table += f"""
             <tr>
@@ -845,11 +845,11 @@ if __name__ == '__main__':
                 days_reporting = len(year_data)
                 avg_daily = (total_pv / days_reporting) if days_reporting > 0 else 0
                 
-                # Format values, show ? for zero values
+                # Format values, show ? if no data (net can be negative when exporting)
                 avg_daily_str = f"{avg_daily:.1f}" if avg_daily > 0 else "?"
                 total_pv_str = f"{total_pv:.1f}" if total_pv > 0 else "?"
                 total_consumption_str = f"{total_consumption:.1f}" if total_consumption > 0 else "?"
-                total_net_str = f"{total_net:.1f}" if total_net > 0 else "?"
+                total_net_str = f"{total_net:.1f}" if total_pv > 0 else "?"
                 
                 yoy_table += f"""
                 <tr>
