@@ -387,15 +387,17 @@ class DailySolarSummary:
             # Calculate totals, handling empty values
             total_pv = sum(float(row['Daily PV Production (kWh)']) if row.get('Daily PV Production (kWh)') else 0.0 for row in year_data)
             total_consumption = sum(float(row['Daily Site Consumption (kWh)']) if row.get('Daily Site Consumption (kWh)') else 0.0 for row in year_data)
-            total_net = sum(float(row['Daily Net Grid (kWh)']) if row.get('Daily Net Grid (kWh)') else 0.0 for row in year_data)
+            # Only sum days that actually have a net value; a blank cell is missing data, not zero
+            net_values = [float(row['Daily Net Grid (kWh)']) for row in year_data if row.get('Daily Net Grid (kWh)') not in (None, '')]
+            total_net = sum(net_values)
             days_reporting = len(year_data)
             avg_daily = (total_pv / days_reporting) if days_reporting > 0 else 0
-            
+
             # Format values, show ? if no data (net can be negative when exporting)
             avg_daily_str = f"{avg_daily:.1f}" if avg_daily > 0 else "?"
             total_pv_str = f"{total_pv:.1f}" if total_pv > 0 else "?"
             total_consumption_str = f"{total_consumption:.1f}" if total_consumption > 0 else "?"
-            total_net_str = f"{total_net:.1f}" if total_pv > 0 else "?"
+            total_net_str = f"{total_net:.1f}" if net_values else "?"
             
             yoy_table += f"""
             <tr>
@@ -841,15 +843,17 @@ if __name__ == '__main__':
                 # Calculate totals, handling empty values
                 total_pv = sum(float(row['Daily PV Production (kWh)']) if row.get('Daily PV Production (kWh)') else 0.0 for row in year_data)
                 total_consumption = sum(float(row['Daily Site Consumption (kWh)']) if row.get('Daily Site Consumption (kWh)') else 0.0 for row in year_data)
-                total_net = sum(float(row['Daily Net Grid (kWh)']) if row.get('Daily Net Grid (kWh)') else 0.0 for row in year_data)
+                # Only sum days that actually have a net value; a blank cell is missing data, not zero
+                net_values = [float(row['Daily Net Grid (kWh)']) for row in year_data if row.get('Daily Net Grid (kWh)') not in (None, '')]
+                total_net = sum(net_values)
                 days_reporting = len(year_data)
                 avg_daily = (total_pv / days_reporting) if days_reporting > 0 else 0
-                
+
                 # Format values, show ? if no data (net can be negative when exporting)
                 avg_daily_str = f"{avg_daily:.1f}" if avg_daily > 0 else "?"
                 total_pv_str = f"{total_pv:.1f}" if total_pv > 0 else "?"
                 total_consumption_str = f"{total_consumption:.1f}" if total_consumption > 0 else "?"
-                total_net_str = f"{total_net:.1f}" if total_pv > 0 else "?"
+                total_net_str = f"{total_net:.1f}" if net_values else "?"
                 
                 yoy_table += f"""
                 <tr>
